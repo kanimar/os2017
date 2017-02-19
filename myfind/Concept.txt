@@ -8,7 +8,7 @@ myfind <file or directory> [ <action> ] ...
 *Die Variabel ist parms das zu suchende File, das mit dem ersten Funktions *Parameter *(argv[1]) übergeben wird*/
 int do_file(const char* file_name, const char* const* parms)
 	/*Funktionsverlauf*/
-	/test if file_name != directory /*Mit lstat(const char *path, struct stat *buf)?*/
+	test if file_name != directory /*Mit lstat(const char *path, struct stat *buf)?*/
 		test if file_name == parms
 			test if actions are set
 				do actions
@@ -21,18 +21,21 @@ int do_file(const char* file_name, const char* const* parms)
 *Für jedes File in diesem Directory wird do_file() aufgerufen.
 *Die Variabel dir_name wird benötigt für die Übergabe des aktuell untersuchten Directory 
 *Die Variabel parms übergibt den Parameter (argv[1])*/
-do_dir(const char* dir_name, const char* const* parms)
+/*Datatype?*/do_dir(const char* dir_name, const char* const* parms)
 	/*Funktionsaufrufe*/	
 	dir_open = opendir(dir_name) 
 		=> opens a directory stream, returns a pointer to first entry of directory
 		=> DIR *opendir(const char* name)
 		
-	Do while (struct_of_dir != NULL)
-		struct_of_dir = readdir(dir_open)
-		search_result = do_file(struct_of_dir->d_name, parms)
-		if search_result == NOT_FOUND continue
-		else closedir(dir_open) return EXIT_SUCCESS
+	Do 
+		struct_of_dir = readdir(dir_open) 
+		test if struct_of_dir != NULL 
+			search_result = do_file(struct_of_dir->d_name, parms)
+			test if search_result == NOT_FOUND continue
+			else closedir(dir_open) => return EXIT_SUCCESS
+	while (struct_of_dir != NULL)
 		
+	
 		readdir()
 		=> returns a pointer to the directory data structure (char d_name sollte relevant für uns sein), returns NULL in end of directory stream is reached
 		=> struct dirent *readdir(DIR *dirp)
