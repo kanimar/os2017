@@ -8,14 +8,14 @@ myfind <file or directory> [ <action> ] ...
 *Die Variabel ist parms das zu suchende File, das mit dem ersten Funktions *Parameter *(argv[1]) übergeben wird*/
 int do_file(const char* file_name, const char* const* parms)
 	/*Funktionsverlauf*/
-	/*test if file_name != directory
-		/*test if file_name == parms
-			/*test if actions are set
-				/*do actions
-			*print result
-			*return EXIT_SUCCESS
+	/test if file_name != directory /*Mit lstat(const char *path, struct stat *buf)?*/
+		test if file_name == parms
+			test if actions are set
+				do actions
+			print result
+			return EXIT_SUCCESS
 		return NOT_FOUND
-	/*do_dir(file_name, parms)
+	do_dir(file_name, parms)
 	
 /**Jedes Directory wird von der Funktion geöffnet, gelesen und geschlossen.
 *Für jedes File in diesem Directory wird do_file() aufgerufen.
@@ -23,7 +23,7 @@ int do_file(const char* file_name, const char* const* parms)
 *Die Variabel parms übergibt den Parameter (argv[1])*/
 do_dir(const char* dir_name, const char* const* parms)
 	/*Funktionsaufrufe*/	
-	/*dir_open = opendir(dir_name) 
+	dir_open = opendir(dir_name) 
 		=> opens a directory stream, returns a pointer to first entry of directory
 		=> DIR *opendir(const char* name)
 		
@@ -36,13 +36,7 @@ do_dir(const char* dir_name, const char* const* parms)
 		readdir()
 		=> returns a pointer to the directory data structure (char d_name sollte relevant für uns sein), returns NULL in end of directory stream is reached
 		=> struct dirent *readdir(DIR *dirp)
+		/*Nach welcher Logik/Reihenfolge werden die Elemente im Directory gelesen?*/
 		
-	/*closedir() => closes directory stream
+	closedir() => closes directory stream /*Wozu brauch man closedir nochmal?*/
 		=> int closedir(DIR *dirp)
-	
-
-
-
-
-	
-	
