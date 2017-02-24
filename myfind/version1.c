@@ -54,11 +54,11 @@ char path[1024];
                         {
                         	printf("%s ",dirent_str->d_name);
                         	/**absolute path with filename is created => in eine eigene Funktion auslagern?**/
-										getcwd(path, sizeof(path)); /*Get current working directory*/
-										strcat(path, slash); /*add slash after current working directory*/
-										strcat(path, dir_name);
-                        		strcat(path, slash);
-										strcat(path, dirent_str->d_name); /*concat current working directory with file_name*/
+				getcwd(path, sizeof(path)); /*Get current working directory*/
+				strcat(path, slash); /*add slash after current working directory*/
+				strcat(path, dir_name);
+                        	strcat(path, slash);
+				strcat(path, dirent_str->d_name); /*concat current working directory with file_name*/
                         	do_file(path, parms);
                         }
                 } while (dirent_str != NULL);
