@@ -3,18 +3,18 @@
 ## Betriebsysteme myfind Makefile
 ## Beispiel 1
 ## @author Alexander Pirka <alexander.pirka@technikum-wien.at>
-## @date 2017/02/16
+## @date 2017/02/26
 ##
-## @version $Revision$
+## @version $Draft$
 ##
 ## @todo
 ## - understand details
+## - find out why gcc52 is leading to compiler error on my local maschine
 ##
 ## URL: $HeadURL$
 ##
 ## Last Modified: $Author$
 ##
-
 ##
 ## ------------------------------------------------------------- variables --
 ##
@@ -26,7 +26,8 @@ INSTALL_LIB_DIR := /usr/local/lib
 INSTALL_SRC_DIR := /usr/local/src
 INSTALL_DOC_DIR := /var/www/html
 
-CC=gcc52
+##gcc52 leading to compiler error
+CC=gcc
 AWK=awk
 
 CFLAGS    += -Wall
@@ -62,7 +63,7 @@ EXCLUDE_PATTERN=footrulewidth
 
 all: myfind
 
-myfind: myfind.o utils.o
+myfind: myfind.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 clean:
@@ -91,8 +92,7 @@ pdf: html
 ## ---------------------------------------------------------- dependencies --
 ##
 
-myfind.o: myfind.c utils.h
-utils.o: utils.c utils.h
+myfind.o: myfind.c
 
 ##
 ## =================================================================== eof ==
