@@ -10,12 +10,13 @@
 #include <string.h>
 
 int parms_count;
+const char* search_string;
 
 void do_dir(const char* dir_name, const char* const* parms);
 void do_file(const char* file_name, const char* const* parms);
+void get_pwd(char* name, const char* dir, char* pp);
 int main(int argc, const char* const argv[])
 {
-const char* search_string;
 const char* const* actions;
 parms_count = argc;
 
@@ -24,8 +25,8 @@ parms_count = argc;
         return 1;
         }
        
-search_string = argv[1];
 actions = argv;
+search_string = argv[1];
 
 do_dir(search_string, actions);
 
@@ -36,8 +37,7 @@ void do_dir(const char* dir_name, const char* const* parms)
 {
 DIR* directory;
 struct dirent* dirent_str;
-char* slash = "/";
-char path[1024];
+char* path = malloc(sizeof(char)*1024);
 
         directory = opendir(dir_name);
 
@@ -53,16 +53,12 @@ char path[1024];
                         if ((dirent_str = readdir(directory)) != NULL)
                         {
                         	printf("%s ",dirent_str->d_name);
-                        	/**absolute path with filename is created => in eine eigene Funktion auslagern?**/
-				getcwd(path, sizeof(path)); /*Get current working directory*/
-				strcat(path, slash); /*add slash after current working directory*/
-				strcat(path, dir_name);
-                        	strcat(path, slash);
-				strcat(path, dirent_str->d_name); /*concat current working directory with file_name*/
-                        	do_file(path, parms);
+                        	get_pwd(dirent_str->d_name, dir_name, path);
+									printf("%s", path);
+									do_file(path, parms);
                         }
                 } while (dirent_str != NULL);
-                printf("fine!\n");
+                closedir(directory);
         }
 }
 
@@ -79,9 +75,24 @@ void do_file(const char* file_name, const char* const* parms)
 	
 	switch (buf.st_mode & S_IFMT) 
 	{
-		case S_IFDIR: printf("....d\n"); /*do_dir(file_name, parms) soll nochnmal aufgerufen werden*/; break;
+		case S_IFDIR: printf("....d\n"); do_dir(file_name, parms); break;
 		case S_IFREG: printf("....f\n"); break;	
 		default: printf("....unkown\n"); break;
 	} 
-	
 }
+void get_pwd(char* name, const char* dir, char* pp)
+{
+	char* slash = "/";
+	char path[1024];
+	char* r;
+	
+		r = getcwd(path, sizeof(path)); 
+		if (r == NULL) exit(EXIT_FAILURE);
+		
+		strcat(path, slash);
+		strcat(path, dir);
+      strcat(path, slash);
+		strcat(path, name); 
+		strcpy(pp, path);
+}
+
