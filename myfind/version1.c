@@ -1,3 +1,22 @@
+/**
+ * @file myfind.c
+ * Main module of myfind
+ *
+ * @author Alexander Pirka <alexander.pirka@technikum-wien.at>
+ * @date 2017/02/26
+ *
+ * @version $Draft$
+ *
+ * @todo Solve Path Problem
+ *
+ * URL: $HeadURL$
+ *
+ * Last Modified: $Author$
+ */
+
+/*
+ * -------------------------------------------------------------- includes --
+ */
 #include <stdio.h>
 #include <pwd.h>
 #include <sys/types.h>
@@ -9,30 +28,42 @@
 #include <unistd.h>
 #include <string.h>
 
+/*
+ * --------------------------------------------------------------- defines --
+ */
+ 
+ /*
+ * --------------------------------------------------------------- globals --
+ */
+ /**
+ * Integer number of parameters
+ */
 int parms_count;
+/**
+ * Pointer to the actual search file/directory passed as argv[1]
+ */
+ 
+ /*
+ * ------------------------------------------------------------- functions --
+ */
+
 const char* search_string;
 
-void do_dir(const char* dir_name, const char* const* parms);
-void do_file(const char* file_name, const char* const* parms);
-void get_pwd(char* name, const char* dir, char* pp);
-int main(int argc, const char* const argv[])
-{
-const char* const* actions;
-parms_count = argc;
-
-        if (argc == 1)
-        { printf("Usage %s [name]", argv[0]);
-        return 1;
-        }
-       
-actions = argv;
-search_string = argv[1];
-
-do_dir(search_string, actions);
-
-return 0;
-}
-
+/**
+ *
+ * \brief iterate over all files starting at current working directory
+ *
+ * This function iterates over all files. Printf filename and passing each file of the
+ * the directory to do_find
+ *
+ * \param dir_name Name of directory. It should be called first with the current directory "."
+ * \param parms Pointer to the passed arguments
+ *
+ * \return None
+ *
+ * \note $Author$ do not know how to handle recursion and pass correct path for do_find
+ *
+ */
 void do_dir(const char* dir_name, const char* const* parms)
 {
 DIR* directory;
@@ -61,7 +92,20 @@ char* path = malloc(sizeof(char)*1024);
                 closedir(directory);
         }
 }
-
+/**
+ *
+ * \brief Check the given file
+ *
+ * This function checks the given file with lstat
+ *
+ * \param file_name Name of the file (could be directory as well)
+ * \param parms Pointer to the passed arguments
+ *
+ * \return None
+ *
+ * \note None
+ *
+ */
 void do_file(const char* file_name, const char* const* parms)
 {
 	errno = 0;
@@ -80,6 +124,21 @@ void do_file(const char* file_name, const char* const* parms)
 		default: printf("....unkown\n"); break;
 	} 
 }
+/**
+ *
+ * \brief Creating absolute path to given filename
+ *
+ * This function creates an absolute path to given filename and store path to \a bpp
+ *
+ * \param name Name of file or directory
+ * \param dir Name of dir
+ * \param pp Buffer to store path after creation is finished
+ *
+ * \return None
+ *
+ * \note $Author$ is wondering if this is really necessary
+ *
+ */
 void get_pwd(char* name, const char* dir, char* pp)
 {
 	char* slash = "/";
@@ -96,3 +155,38 @@ void get_pwd(char* name, const char* dir, char* pp)
 		strcpy(pp, path);
 }
 
+/**
+ *
+ * \brief Main entry point of program.
+ *
+ * This function is the main entry point of the program.
+ *
+ * \param argc Number of command line arguments. (IN)
+ * \param argv Array of command line arguments. (IN)
+ *
+ * \return The function returns whether or not the program executed
+ *         successfully.
+ * \retval 0 Successful program termination
+ * \retval 1 Failed program termination
+ *
+ */
+int main(int argc, const char* const argv[])
+{
+const char* const* actions;
+parms_count = argc;
+
+        if (argc == 1)
+        { printf("Usage %s [name]", argv[0]);
+        return 1;
+        }
+       
+actions = argv;
+search_string = argv[1];
+
+do_dir(search_string, actions);
+
+return 0;
+}
+/*
+ * =================================================================== eof ==
+ */
