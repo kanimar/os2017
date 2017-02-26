@@ -42,12 +42,14 @@ int parms_count;
 /**
  * Pointer to the actual search file/directory passed as argv[1]
  */
- 
+ const char* search_string;
+
  /*
  * ------------------------------------------------------------- functions --
  */
-
-const char* search_string;
+void do_dir(const char* dir_name, const char* const* parms);
+void do_file(const char* file_name, const char* const* parms);
+void get_pwd(char* name, const char* dir, char* pp);
 
 /**
  *
@@ -85,8 +87,8 @@ char* path = malloc(sizeof(char)*1024);
                         {
                         	printf("%s ",dirent_str->d_name);
                         	get_pwd(dirent_str->d_name, dir_name, path);
-									printf("%s", path);
-									do_file(path, parms);
+				printf("%s", path);
+				do_file(path, parms);
                         }
                 } while (dirent_str != NULL);
                 closedir(directory);
