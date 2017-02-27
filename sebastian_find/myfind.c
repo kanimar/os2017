@@ -7,12 +7,12 @@
  * @author Maria Karnikova <ic16b002@technikum-wien.at>
  * @author Christian Fuhry <ic16b055@technikum-wien.at>
  * @author Sebastian Boehm <ic16b032@technikum-wien.at>
- * @date 2017/02/26
+ * @date 2017/02/27
  *
  * @version 0.1 
  *
  * @todo God help us all
- * @todo error handling in usage function
+ * @todo error handling!!
  *
  */
 
@@ -54,10 +54,11 @@
  static void do_dir(const char* dir_name, const char* const* parms);
  /*static void comp_name(const char* file_name, const char* const* parms, const int* fnm);*/
  static void comp_print(const char* file_name);
+ static int parameter_check(const char* const* parms);
 
 /**
  *
- * \brief The start of myfind.
+ * \brief The start of myfind
  *
  * This is the main entry point for this myfind C program.
  * Checks if sufficent ammount of parameters have been entered.
@@ -75,21 +76,29 @@ int main(int argc, const char *argv[])
     if (argc < 2)
 	{
 		usage_print(argv);
+		return EXIT_FAILURE;
 	}
-	do_file(argv[1], argv);
-	return 0;
+	if (parameter_check(argv) == 0)
+	{
+		do_file(argv[1], argv);
+	}
+	else 
+	{
+		usage_print(argv);
+	}
+	return EXIT_SUCCESS;
 }
 /**
- * \brief do_file
+ * \brief do_file compares parameters with set parameters and prints if corresponding
  *
- * xxx
+ * Compares the arguments/parameters with the parameters defined in the function.
+ * Prints the file name, directory as set in the parameter functions. 
+ * If file_name is a directory the function calls do_dir.
  *
  * \param file_name name of directory or file
  * \param parms pointer to start of parameters
  *
- * \return xxx
- * \retval xxx
- * \retval xxx
+ * \return nada
  *
  */
  static void do_file(const char* file_name, const char* const* parms)
@@ -120,22 +129,21 @@ int main(int argc, const char *argv[])
 			 parm_cnt++;
 		 }
 	 }
-	 if(S_ISDIR(buffer.st_mode))
+	 if(S_ISDIR(buffer.st_mode)) //checks if file is a directory
 	 {
 		 do_dir(file_name, parms);
 	 }
  }
  /**
- * \brief do_dir
+ * \brief do_dir works through directory and opens do_file for files
  *
- * xxx
+ * Reads the entries (via dirent) of the given directory and calls do_file for every entry.
+ * Adds / at the end of directory name if missing to get full path name.
  *
- * \param file_name name of directory or file
+ * \param file_name name of directory
  * \param parms pointer to start of parameters
  *
- * \return xxx
- * \retval xxx
- * \retval xxx
+ * \return nothing babe
  *
  */
  static void do_dir(const char* dir_name, const char* const* parms)
@@ -166,12 +174,11 @@ int main(int argc, const char *argv[])
  
  /**
  *
- * \brief comp_print prints found files with same name.
+ * \brief comp_print prints found files with same name
  *
- * xxx.
+ * Prints files or directory with the same name as argv[2].
  *
- * \param file_name
- * \param parms
+ * \param file_name Name of the file as defined by the calling function.
  *
  * \return njet
  *
@@ -179,7 +186,7 @@ int main(int argc, const char *argv[])
  
  static void comp_print(const char* file_name)
  {
-	 printf("%s\n", file_name); //error handling???
+	 printf("%s\n", file_name);	 //error handling???
  }
  
  /**
@@ -202,7 +209,7 @@ int main(int argc, const char *argv[])
  
 /**
  *
- * \brief usage_print explains usage of myfind.
+ * \brief usage_print explains usage of myfind
  *
  * This function lists the parameters needed for successful myfind execution.
  *
@@ -211,10 +218,9 @@ int main(int argc, const char *argv[])
  * \return njet
  *
  */
-
 static void usage_print(const char* const* params) /* how does error handling in printf work?? */
 {
-	printf("Usage of myfind:\n "
+	printf("Usage of myfind:\n"
 	"type:            myfind <file or directory> [ <action> ]\n"
 	"actions can be: -user <name>|<uid>\n"
 	"                -name <pattern>\n"
@@ -225,6 +231,53 @@ static void usage_print(const char* const* params) /* how does error handling in
 	"                -path <pattern>\n"
 	"                -group <name>|<gid>\n"
 	"                -nogroup\n");
+}
+
+/**
+ *
+ * \brief parameter_check compares entered parameters with set parameters
+ *
+ * This function compares the arguments entered with the set parameters.
+ * If returned unsuccessful, usage_print shall be called.
+ *
+ * \param params is list of parameters typed as parameters of function
+ *
+ * \return 0 if successful 1 if unsuccessful
+ * \retval 0 if successful
+ * \retval 1 if unsuccessful
+ *
+ */
+static int parameter_check(const char* const* parms)
+{
+	int counter = 2;
+	while (parms[counter] != NULL)
+	{
+		if(strcmp(parms[counter], "-user") == 0 ||
+		   strcmp(parms[counter], "-name") == 0 ||
+		   strcmp(parms[counter], "-type") == 0 ||
+		   strcmp(parms[counter], "-path") == 0 ||
+		   strcmp(parms[counter], "-group") == 0)
+		{
+			  if (parms[counter + 1] == NULL)
+		   {
+			   usage_print(parms);
+			   return 1;
+		   } 
+		   counter += 2;
+		}
+		else if(strcmp(parms[counter], "-print") == 0 ||
+		        strcmp(parms[counter], "-ls") == 0 ||
+		        strcmp(parms[counter], "-nouser") == 0 ||
+		        strcmp(parms[counter], "-nogroup") == 0)
+		{
+			counter++;   
+	    }
+		else 
+		{
+			return 1;
+		}
+	}
+	return 0;
 }
 
 /*
