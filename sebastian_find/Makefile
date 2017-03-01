@@ -27,7 +27,7 @@ INSTALL_SRC_DIR := /usr/local/src
 INSTALL_DOC_DIR := /var/www/html
 
 ##gcc52 leading to compiler error
-CC=gcc
+CC=gcc52
 AWK=awk
 
 CFLAGS    += -Wall
