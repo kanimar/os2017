@@ -7,12 +7,12 @@
  * @author Maria Karnikova <ic16b002@technikum-wien.at>
  * @author Christian Fuhry <ic16b055@technikum-wien.at>
  * @author Sebastian Boehm <ic16b032@technikum-wien.at>
- * @date 2017/02/27
+ * @date 2017/03/04
  *
- * @version 0.1 
+ * @version 0.2 
  *
  * @todo God help us all
- * @todo error handling!!
+ * @Christian error handling!!
  *
  */
 
@@ -105,7 +105,6 @@ int main(int argc, const char *argv[])
  static void do_file(const char* file_name, const char* const* parms)
  {
 	 struct stat buffer; 
-	 int errno_temp = 0;
 	 int parm_cnt = 2; //helper variable to choose array element
 	 
 	 /*checks if lstat completes*/
@@ -159,11 +158,6 @@ int main(int argc, const char *argv[])
 	 }
 	errno = 0;
 	 while ((dirpt = readdir(tempDir)) != NULL) 
-		 if (errno != 0)
-		 {
-			 do_error(dir_name, parms);
-			 return;
-		 }
 
 
 	 {
@@ -182,11 +176,7 @@ int main(int argc, const char *argv[])
 	errno = 0;
 	 closedir(tempDir);
 
-	 if (closedir(tempDir) != 0))
-	 {
-	 do_error(dir_name, parms);
-	 return;
-	 }
+	 
  }
  
  /**
