@@ -105,7 +105,7 @@ int main(int argc, const char *argv[])
  static void do_file(const char* file_name, const char* const* parms)
  {
 	 struct stat buffer; 
-	 int errno_temp = 0;
+	
 	 int parm_cnt = 2; //helper variable to choose array element
 	 
 	 /*checks if lstat completes*/
