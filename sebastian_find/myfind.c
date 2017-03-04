@@ -7,12 +7,13 @@
  * @author Maria Karnikova <ic16b002@technikum-wien.at>
  * @author Christian Fuhry <ic16b055@technikum-wien.at>
  * @author Sebastian Boehm <ic16b032@technikum-wien.at>
- * @date 2017/02/27
+ * @date 2017/03/04
  *
- * @version 0.1 
+ * @version 0.2
  *
  * @todo God help us all
- * @todo error handling!!
+ * @Christian error handling in Arbeit!
+                                                   @to do . / .. search
  *
  */
 
