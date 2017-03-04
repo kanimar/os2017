@@ -111,7 +111,7 @@ int main(int argc, const char *argv[])
 	 /*checks if lstat completes*/
 	 if (lstat(file_name, &buffer) == -1)
 	 {
-		 fprintf(stderr,"%s: Can not read lstat from %s\n", *parms,file_name);
+		 fprintf(stderr,"%s: Cannot read lstat from %s\n", *parms,file_name);
 		 return;	 
 	 }
 	 while (parms[parm_cnt] != NULL) 
@@ -154,7 +154,7 @@ int main(int argc, const char *argv[])
 	 tempDir = opendir(dir_name);
 	 if (tempDir == NULL)
 	 {
-		fprintf(stderr,"%s: Can not open %s\n", *parms, dir_name);
+		fprintf(stderr,"%s: Cannot open %s\n", *parms, dir_name);
 		 return;
 	 }
 	 while ((dirpt = readdir(tempDir)) != NULL) //error handling
