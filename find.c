@@ -7,12 +7,12 @@
  * @author Maria Karnikova <ic16b002@technikum-wien.at>
  * @author Christian Fuhry <ic16b055@technikum-wien.at>
  * @author Sebastian Boehm <ic16b032@technikum-wien.at>
- * @date 2017/03/04
+ * @date 2017/02/27
  *
  * @version 0.1 
  *
  * @todo God help us all
- * @  Started Error handling MFG Christian
+ * @todo error handling!!
  *
  */
 
@@ -111,7 +111,7 @@ int main(int argc, const char *argv[])
 	 /*checks if lstat completes*/
 	 if (lstat(file_name, &buffer) == -1)
 	 {
-		 fprintf(stderr,"%s: Cannot read lstat from %s\n", *parms,file_name);
+		  do_error(file_name, parms);                          
 		 return;	 
 	 }
 	 while (parms[parm_cnt] != NULL) 
@@ -154,10 +154,18 @@ int main(int argc, const char *argv[])
 	 tempDir = opendir(dir_name);
 	 if (tempDir == NULL)
 	 {
-		fprintf(stderr,"%s: Cannot open %s\n", *parms, dir_name);
+		 do_error(dir_name, parms);
 		 return;
 	 }
-	 while ((dirpt = readdir(tempDir)) != NULL) //error handling
+	errno = 0;
+	 while ((dirpt = readdir(tempDir)) != NULL) 
+		 if (errno != 0)
+		 {
+			 do_error(dir_name, parms);
+			 return;
+		 }
+
+
 	 {
 		 if(strcmp(dirpt->d_name, ".") != 0 && strcmp(dirpt->d_name, "..") != 0)
 		 {
@@ -171,7 +179,14 @@ int main(int argc, const char *argv[])
 			 do_file(tempPath, parms);
 		 }
 	 }
-	 closedir(tempDir); //error handling
+	errno = 0;
+	 closedir(tempDir);
+
+	 if (closedir(tempDir) != 0))
+	 {
+	 do_error(dir_name, parms);
+	 return;
+	 }
  }
  
  /**
