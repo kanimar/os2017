@@ -56,7 +56,7 @@ static void do_dir(const char* dir_name, const char* const* parms);
 static int do_check(const char* const* parms);
 static void do_error(const char* file_name, const char* const* parms);
 static void comp_print(const char* file_name);
-static int do_ls_print(const char* file_name, const char* const* parms,const struct stat sb);
+static int do_ls_print(const char* file_name, const struct stat sb);
 /**
 *
 * \brief The start of myfind
@@ -130,7 +130,7 @@ static void do_file(const char* file_name, const char* const* parms)
 		}
 		if (strcmp(parms[offset], "-ls") == 0)
 		{
-			do_ls_print(file_name,parms,sb);
+			do_ls_print(file_name,sb);
 		}
 		 	offset++;
 	}
@@ -250,8 +250,9 @@ static void usage_print(const char* const* parms) /* how does error handling in 
 * \This funktion prints -ls
 *
 */
-static int do_ls_print(const char* file_name, const char* const* parms, const struct stat sb)
+static int do_ls_print(const char* file_name, const struct stat sb)
 {
+
 	if (sb.st_mode & S_IFREG)
 	{
 		printf("-");    //file ?
