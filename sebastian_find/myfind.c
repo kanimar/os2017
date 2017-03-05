@@ -254,14 +254,15 @@ static void do_usage_print(const char* const* parms) /* how does error handling 
 static int do_ls_print(const char* file_name, const struct stat sb)
 {
 	unsigned int temp = 0;
+	int i = 0;
+	char l_rwx[10];
+	l_rwx[9] = '\0';
 
 	if (getenv("POSIXLY_CORRECT") == NULL) 
 	{
 		temp = ((unsigned int)sb.st_blocks / 2 + sb.st_blocks % 2);
 	}
-
 	printf("%ld %4u ",sb.st_ino,temp);
-	
 
 	if (sb.st_mode & S_IFREG)
 	{
@@ -273,15 +274,27 @@ static int do_ls_print(const char* file_name, const struct stat sb)
 	}
 	else
 		printf(" ");		 //unknown ?
-	
-	
-	if (access(file_name, 4) != -1) printf("r");
-	if (access(file_name, 2) != -1) printf("w");
-	if (access(file_name, 1) != -1) printf("x");
+
+
+	const char *rwx = "rwxrwxrwx";
+	int bits[] = {
+		S_IRUSR,S_IWUSR,S_IXUSR,/*Zugriffsrechte User*/
+		S_IRGRP,S_IWGRP,S_IXGRP,/*Zugriffsrechte Gruppe*/
+		S_IROTH,S_IWOTH,S_IXOTH /*Zugriffsrechte der Rest*/
+	};
+	/* Einfache Zugriffsrechte erfragen */
+	l_rwx[0] = '\0';
+	for (i = 0; i<9; i++) { /*Wenn nicht 0, dann gesetzt*/
+		l_rwx[i] = (sb.st_mode & bits[i]) ? rwx[i] : '-';
+	}
+	l_rwx[9] = '\0';
+	printf("%s", l_rwx);
+
+
 
 
 	
-	printf("\t\t\t%s\n", file_name);	
+	printf("%4.0d\t\t\t\t\t    %s\n", sb.st_nlink,file_name);	
 	
 	return EXIT_SUCCESS;
 }
