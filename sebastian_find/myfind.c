@@ -56,7 +56,7 @@ static void do_dir(const char* dir_name, const char* const* parms);
 static int do_check(const char* const* parms);
 static void do_error(const char* file_name, const char* const* parms);
 static void comp_print(const char* file_name);
-static int do_ls_print(const char* file_name, const char* const* parms,struct stat buffer);
+static int do_ls_print(const char* file_name, const char* const* parms,struct stat sb);
 /**
 *
 * \brief The start of myfind
@@ -73,7 +73,7 @@ static int do_ls_print(const char* file_name, const char* const* parms,struct st
 *
 */
 int main(int argc, const char *argv[])
-{
+{	
 	if (argc < 2)
 	{
 		usage_print(argv);
@@ -104,13 +104,13 @@ int main(int argc, const char *argv[])
 */
 static void do_file(const char* file_name, const char* const* parms)
 {
-	struct stat buffer;
+	struct stat sb; //metadata
 	int offset = 2; //helper variable to choose array element
 
-					  /*checks if lstat completes*/
-	if (lstat(file_name, &buffer) == -1)
+					  
+	if (lstat(file_name, &sb) == -1)
 	{
-		do_error(file_name, parms);
+		do_error(file_name, parms);      //checks if lstat completes
 		return;
 	}
 	while (parms[offset] != NULL)
@@ -130,11 +130,11 @@ static void do_file(const char* file_name, const char* const* parms)
 		}
 		if (strcmp(parms[offset], "-ls") == 0)
 		{
-			do_ls_print(file_name,parms,buffer);
+			do_ls_print(file_name,parms,sb);
 		}
 		 	offset++;
 	}
-	if (S_ISDIR(buffer.st_mode)) //checks if file is a directory
+	if (S_ISDIR(sb.st_mode)) //checks if file is a directory
 	{
 		do_dir(file_name, parms);
 	}
@@ -239,7 +239,7 @@ static void comp_print(const char* file_name)
 */
 static void usage_print(const char* const* parms) /* how does error handling in printf work?? */
 {
-	fprintf(stderr,"Usage: %s <file or directory> <action> \n"
+	fprintf(stderr,"Usage: %s <file or directory> <aktion> \n"
 		
 		"-print\n"
 		"-ls\n",
@@ -250,11 +250,20 @@ static void usage_print(const char* const* parms) /* how does error handling in 
 * \This funktion prints -ls
 *
 */
-static int do_ls_print(const char* file_name, const char* const* parms, struct stat buffer)
+static int do_ls_print(const char* file_name, const char* const* parms, struct stat sb)
 {
-	printf("LS is still in work :)\n\n%s\n", file_name);	 //error handling???
-
-	return 0;
+	if (sb.st_mode & S_IFREG)
+	{
+		printf("-");    //file ?
+	}
+	else if (sb.st_mode & S_IFDIR)
+	{
+		printf("d");	//directory ?
+	}
+	
+	printf("\n LS is still in work :)\n\n%s\n", file_name);	 //error handling???
+	
+	return EXIT_SUCCESS;
 }
 /**
 *
