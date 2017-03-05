@@ -8,7 +8,7 @@ Beim Punkt "variables" die Compiler Informationen eingetragen, die definiert war
 Beim Punkt "targets" myfind eingesetzt wo mygrep verwendet wurde<br/>
 Alle Relationen zu Headerfiles gelöscht<br/>
 <br/>
-Ausführung von Make über im Directory des Source-Codes und des Makefiles mittels: make myfind<br/>
+Ausführung von Make im Directory des Source-Codes und des Makefiles mittels: make myfind<br/>
 <br/>
 2) Doc<br/>
 Vorlage von fgrep genommen<br/>
