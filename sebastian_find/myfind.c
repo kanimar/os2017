@@ -49,13 +49,13 @@
 /*
 * ------------------------------------------------------------- functions --
 */
-static void usage_print(const char* const* parms);
+static void do_usage_print(const char* const* parms);
 static void do_file(const char* file_name, const char* const* parms);
 static void do_dir(const char* dir_name, const char* const* parms);
 /*static void comp_name(const char* file_name, const char* const* parms, const int* fnm);*/
 static int do_check(const char* const* parms);
 static void do_error(const char* file_name, const char* const* parms);
-static void comp_print(const char* file_name);
+static void do_comp_print(const char* file_name);
 static int do_ls_print(const char* file_name, const struct stat sb);
 /**
 *
@@ -76,7 +76,7 @@ int main(int argc, const char *argv[])
 {	
 	if (argc < 2)
 	{
-		usage_print(argv);
+		do_usage_print(argv);
 		return EXIT_FAILURE;
 	}
 	if (do_check(argv) == 0)
@@ -85,7 +85,7 @@ int main(int argc, const char *argv[])
 	}
 	else
 	{
-		usage_print(argv);
+		do_usage_print(argv);
 	}
 	return EXIT_SUCCESS;
 }
@@ -125,12 +125,12 @@ static void do_file(const char* file_name, const char* const* parms)
 		} */
 		if (strcmp(parms[offset], "-print") == 0)
 		{
-			comp_print(file_name);
+			do_comp_print(file_name);
 
 		}
 		if (strcmp(parms[offset], "-ls") == 0)
 		{
-			do_ls_print(file_name,sb);
+			do_ls_print(file_name, sb);
 		}
 		 	offset++;
 	}
@@ -199,7 +199,7 @@ static void do_dir(const char* dir_name, const char* const* parms)
 *
 */
 
-static void comp_print(const char* file_name)
+static void do_comp_print(const char* file_name)
 {
 	printf("%s\n", file_name);	 //error handling???
 }
@@ -237,7 +237,7 @@ static void comp_print(const char* file_name)
 			"-path <pattern>\n"
 *
 */
-static void usage_print(const char* const* parms) /* how does error handling in printf work?? */
+static void do_usage_print(const char* const* parms) /* how does error handling in printf work?? */
 {
 	fprintf(stderr,"Usage: %s <file or directory> <aktion> \n"
 		
@@ -248,10 +248,20 @@ static void usage_print(const char* const* parms) /* how does error handling in 
 /**
 *
 * \This funktion prints -ls
-*
+*  char *getenv(const char *name) searches for the environment string pointed to by name and returns the associated value to the string.
+*  Acronym for P ortable O perating S ystem I nterface UniX.
 */
 static int do_ls_print(const char* file_name, const struct stat sb)
 {
+	unsigned int temp = 0;
+
+	if (getenv("POSIXLY_CORRECT") == NULL) 
+	{
+		temp = ((unsigned int)sb.st_blocks / 2 + sb.st_blocks % 2);
+	}
+
+	printf("%ld %4u ",sb.st_ino,temp);
+	
 
 	if (sb.st_mode & S_IFREG)
 	{
@@ -271,7 +281,7 @@ static int do_ls_print(const char* file_name, const struct stat sb)
 
 
 	
-	printf("\t\t%s\n", file_name);	
+	printf("\t\t\t%s\n", file_name);	
 	
 	return EXIT_SUCCESS;
 }
@@ -300,7 +310,7 @@ static int do_check(const char* const* parms)
 		{
 			if (parms[offset + 1] == NULL)
 			{
-				usage_print(parms);
+				do_usage_print(parms);
 				return EXIT_FAILURE;
 			}
 			
@@ -314,6 +324,7 @@ static int do_check(const char* const* parms)
 		}
 		else
 		{
+			do_usage_print(parms);
 			return EXIT_FAILURE;
 		}
 	}
