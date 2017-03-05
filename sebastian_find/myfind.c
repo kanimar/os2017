@@ -261,7 +261,7 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 		printf("d");	//directory ?
 	}
 	else
-		printf("");		 //unknown ?
+		printf(" ");		 //unknown ?
 	
 	
 	if (access(file_name, 4) != -1) printf("r");
