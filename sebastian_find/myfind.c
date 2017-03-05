@@ -53,10 +53,10 @@ static void usage_print(const char* const* parms);
 static void do_file(const char* file_name, const char* const* parms);
 static void do_dir(const char* dir_name, const char* const* parms);
 /*static void comp_name(const char* file_name, const char* const* parms, const int* fnm);*/
-static int parameter_check(const char* const* parms);
+static int do_check(const char* const* parms);
 static void do_error(const char* file_name, const char* const* parms);
 static void comp_print(const char* file_name);
-static int do_ls(const char* file_name, const char* const* parms,struct stat buffer);
+static int do_ls_print(const char* file_name, const char* const* parms,struct stat buffer);
 /**
 *
 * \brief The start of myfind
@@ -79,7 +79,7 @@ int main(int argc, const char *argv[])
 		usage_print(argv);
 		return EXIT_FAILURE;
 	}
-	if (parameter_check(argv) == 0)
+	if (do_check(argv) == 0)
 	{
 		do_file(argv[1], argv);
 	}
@@ -130,9 +130,9 @@ static void do_file(const char* file_name, const char* const* parms)
 		}
 		if (strcmp(parms[offset], "-ls") == 0)
 		{
-			do_ls(file_name,parms,buffer);
+			do_ls_print(file_name,parms,buffer);
 		}
-			offset++;
+		 	offset++;
 	}
 	if (S_ISDIR(buffer.st_mode)) //checks if file is a directory
 	{
@@ -239,7 +239,7 @@ static void comp_print(const char* file_name)
 */
 static void usage_print(const char* const* parms) /* how does error handling in printf work?? */
 {
-	fprintf(stderr,"Usage: %s <file or directory> <aktion> \n"
+	fprintf(stderr,"Usage: %s <file or directory> <action> \n"
 		
 		"-print\n"
 		"-ls\n",
@@ -250,7 +250,7 @@ static void usage_print(const char* const* parms) /* how does error handling in 
 * \This funktion prints -ls
 *
 */
-static int do_ls(const char* file_name, const char* const* parms, struct stat buffer)
+static int do_ls_print(const char* file_name, const char* const* parms, struct stat buffer)
 {
 	printf("LS is still in work :)\n\n%s\n", file_name);	 //error handling???
 
@@ -268,7 +268,7 @@ static int do_ls(const char* file_name, const char* const* parms, struct stat bu
 * \return 0 if successful 1 if unsuccessful
 *
 */
-static int parameter_check(const char* const* parms)
+static int do_check(const char* const* parms)
 {
 	int offset = 2;
 	while (parms[offset] != NULL)
