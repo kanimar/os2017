@@ -56,7 +56,7 @@ static void do_dir(const char* dir_name, const char* const* parms);
 static int do_check(const char* const* parms);
 static void do_error(const char* file_name, const char* const* parms);
 static void comp_print(const char* file_name);
-static int do_ls_print(const char* file_name, const char* const* parms,struct stat sb);
+static int do_ls_print(const char* file_name, const char* const* parms,const struct stat sb);
 /**
 *
 * \brief The start of myfind
@@ -250,7 +250,7 @@ static void usage_print(const char* const* parms) /* how does error handling in 
 * \This funktion prints -ls
 *
 */
-static int do_ls_print(const char* file_name, const char* const* parms, struct stat sb)
+static int do_ls_print(const char* file_name, const char* const* parms, const struct stat sb)
 {
 	if (sb.st_mode & S_IFREG)
 	{
@@ -260,8 +260,17 @@ static int do_ls_print(const char* file_name, const char* const* parms, struct s
 	{
 		printf("d");	//directory ?
 	}
+	else
+		printf("");		 //unknown ?
 	
-	printf("\n LS is still in work :)\n\n%s\n", file_name);	 //error handling???
+	
+	if (access(file_name, 4) != -1) printf("r");
+	if (access(file_name, 2) != -1) printf("w");
+	if (access(file_name, 1) != -1) printf("x");
+
+
+	
+	printf("\t\t%s\n", file_name);	
 	
 	return EXIT_SUCCESS;
 }
