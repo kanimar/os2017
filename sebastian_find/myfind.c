@@ -254,47 +254,46 @@ static void do_usage_print(const char* const* parms) /* how does error handling 
 static int do_ls_print(const char* file_name, const struct stat sb)
 {
 	unsigned int temp = 0;
-	int i = 0;
-	char l_rwx[10];
-	l_rwx[9] = '\0';
+	char   mode[] = { "?---------" };
+	
+	
+	if (getenv("POSIXLY_CORRECT") == NULL)
+		{
+			temp = ((unsigned int) sb.st_blocks / 2 + sb.st_blocks % 2);
+		}
 
-	if (getenv("POSIXLY_CORRECT") == NULL) 
-	{
-		temp = ((unsigned int)sb.st_blocks / 2 + sb.st_blocks % 2);
-	}
-	printf("%ld %4u ",sb.st_ino,temp);
+	printf("%ld %4u ", sb.st_ino, temp);
 
-	if (sb.st_mode & S_IFREG)
-	{
-		printf("-");    //file ?
-	}
-	else if (sb.st_mode & S_IFDIR)
-	{
-		printf("d");	//directory ?
-	}
-	else
-		printf(" ");		 //unknown ?
+	if	(sb.st_mode  & S_IFREG)		mode[0] = '-';		//regular file
+	else if (sb.st_mode  & S_IFDIR)		mode[0] = 'd';		//directory
+	else if (sb.st_mode  & S_IFCHR)		mode[0] = 'c';		//character device
+	else if (sb.st_mode  & S_IFBLK)		mode[0] = 'b';		//block device				
+	else if (sb.st_mode  & S_IFIFO)		mode[0] = 'f';		//FIFO
+	else if (sb.st_mode  & S_IFLNK)		mode[0] = 'l';		//symbolic link
+	else if (sb.st_mode  & S_IFSOCK)	mode[0] = 's';		//socket
+	else					mode[0] = '?';		//unknown 
+						
+	
+	if	(sb.st_mode & S_IRUSR )						mode[1] = 'r'; //read	
+	if	(sb.st_mode & S_IWUSR  )					mode[2] = 'w'; //write
+	if	((sb.st_mode & S_IXUSR) && !(sb.st_mode & S_ISUID))		mode[3] = 'x'; //execute without sticky
+	else if (sb.st_mode & S_IXUSR)						mode[3] = 's'; //execute with sticky
+	else if (sb.st_mode & S_ISUID)						mode[3] = 'S'; //not execute with sticky
+		
+	if	(sb.st_mode & S_IRGRP)						mode[4] = 'r'; //read	
+	if	(sb.st_mode & S_IWGRP)						mode[5] = 'w'; //write
+	if	((sb.st_mode & S_IXGRP) && !(sb.st_mode & S_ISGID))		mode[6] = 'x'; //execute without sticky
+	else if (sb.st_mode & S_IXGRP)						mode[6] = 's'; //execute with sticky
+	else if (sb.st_mode & S_ISGID)						mode[6] = 'S'; //not execute with sticky
 
-
-	const char *rwx = "rwxrwxrwx";
-	int bits[] = {
-		S_IRUSR,S_IWUSR,S_IXUSR,/*Zugriffsrechte User*/
-		S_IRGRP,S_IWGRP,S_IXGRP,/*Zugriffsrechte Gruppe*/
-		S_IROTH,S_IWOTH,S_IXOTH /*Zugriffsrechte der Rest*/
-	};
-	/* Einfache Zugriffsrechte erfragen */
-	l_rwx[0] = '\0';
-	for (i = 0; i<9; i++) { /*Wenn nicht 0, dann gesetzt*/
-		l_rwx[i] = (sb.st_mode & bits[i]) ? rwx[i] : '-';
-	}
-	l_rwx[9] = '\0';
-	printf("%s", l_rwx);
-
-
-
+	if	(sb.st_mode & S_IROTH)						mode[7] = 'r'; //read	
+	if	(sb.st_mode & S_IWOTH)						mode[8] = 'w'; //write
+	if	((sb.st_mode & S_IXOTH) && !(sb.st_mode & S_ISVTX))		mode[9] = 'x'; //execute without sticky
+	else if (sb.st_mode & S_IXOTH)						mode[9] = 't'; //execute with sticky
+	else if (sb.st_mode & S_ISVTX)						mode[9] = 'T'; //not execute with sticky
 
 	
-	printf("%4.0d\t\t\t\t\t    %s\n", sb.st_nlink,file_name);	
+	printf("%s%4.0d\t\t\t    %s\n", mode,sb.st_nlink,file_name);	
 	
 	return EXIT_SUCCESS;
 }
