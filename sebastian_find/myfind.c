@@ -279,33 +279,33 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 
 	printf("%ld %4u ", buf.st_ino, blocks);
 
-	if		(buf.st_mode  & S_IFREG)		mode[0] = '-';		//regular file
+	if	(buf.st_mode  & S_IFREG)		mode[0] = '-';		//regular file
 	else if (buf.st_mode  & S_IFDIR)		mode[0] = 'd';		//directory
 	else if (buf.st_mode  & S_IFCHR)		mode[0] = 'c';		//char special file
 	else if (buf.st_mode  & S_IFBLK)		mode[0] = 'b';		//block special file			
 	else if (buf.st_mode  & S_IFIFO)		mode[0] = 'f';		//FIFO(named pipe)
 	else if (buf.st_mode  & S_IFLNK)		mode[0] = 'l';		//symbolic link
 	else if (buf.st_mode  & S_IFSOCK)		mode[0] = 's';		//socket
-	else									mode[0] = '?';		//unknown 
+	else						mode[0] = '?';		//unknown 
 						
 	
-	if	(buf.st_mode & S_IRUSR )								mode[1] = 'r'; //user readable	
-	if	(buf.st_mode & S_IWUSR  )								mode[2] = 'w'; //user writeable
-	if	((buf.st_mode & S_IXUSR) && !(buf.st_mode & S_ISUID))	mode[3] = 'x'; //user executable without sticky
-	else if (buf.st_mode & S_IXUSR)									mode[3] = 's'; //user executable
-	else if (buf.st_mode & S_ISUID)									mode[3] = 'S'; //user not executable with sticky
+	if	(buf.st_mode & S_IRUSR )							mode[1] = 'r'; //user readable	
+	if	(buf.st_mode & S_IWUSR  )							mode[2] = 'w'; //user writeable
+	if	((buf.st_mode & S_IXUSR) && !(buf.st_mode & S_ISUID))				mode[3] = 'x'; //user executable without sticky
+	else if (buf.st_mode & S_IXUSR)								mode[3] = 's'; //user executable
+	else if (buf.st_mode & S_ISUID)								mode[3] = 'S'; //user not executable with sticky
 		
-	if	(buf.st_mode & S_IRGRP)									mode[4] = 'r'; //group readable	
-	if	(buf.st_mode & S_IWGRP)									mode[5] = 'w'; //group writeable
-	if	((buf.st_mode & S_IXGRP) && !(buf.st_mode & S_ISGID))	mode[6] = 'x'; //group executable without sticky
-	else if (buf.st_mode & S_IXGRP)									mode[6] = 's'; //group executable
-	else if (buf.st_mode & S_ISGID)									mode[6] = 'S'; //group not executable with sticky
+	if	(buf.st_mode & S_IRGRP)								mode[4] = 'r'; //group readable	
+	if	(buf.st_mode & S_IWGRP)								mode[5] = 'w'; //group writeable
+	if	((buf.st_mode & S_IXGRP) && !(buf.st_mode & S_ISGID))				mode[6] = 'x'; //group executable without sticky
+	else if (buf.st_mode & S_IXGRP)								mode[6] = 's'; //group executable
+	else if (buf.st_mode & S_ISGID)								mode[6] = 'S'; //group not executable with sticky
 
-	if	(buf.st_mode & S_IROTH)									mode[7] = 'r'; //others readable	
-	if	(buf.st_mode & S_IWOTH)									mode[8] = 'w'; //others writeable
-	if	((buf.st_mode & S_IXOTH) && !(buf.st_mode & S_ISVTX))	mode[9] = 'x'; //others executable without sticky
-	else if (buf.st_mode & S_IXOTH)									mode[9] = 't'; //others executable
-	else if (buf.st_mode & S_ISVTX)									mode[9] = 'T'; //others save swapped test after use (sticky)
+	if	(buf.st_mode & S_IROTH)								mode[7] = 'r'; //others readable	
+	if	(buf.st_mode & S_IWOTH)								mode[8] = 'w'; //others writeable
+	if	((buf.st_mode & S_IXOTH) && !(buf.st_mode & S_ISVTX))				mode[9] = 'x'; //others executable without sticky
+	else if (buf.st_mode & S_IXOTH)								mode[9] = 't'; //others executable
+	else if (buf.st_mode & S_ISVTX)								mode[9] = 'T'; //others save swapped test after use (sticky)
 
 
 	
