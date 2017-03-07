@@ -7,13 +7,14 @@
 * @author Maria Karnikova <ic16b002@technikum-wien.at>
 * @author Christian Fuhry <ic16b055@technikum-wien.at>
 * @author Sebastian Boehm <ic16b032@technikum-wien.at>
-* @date 2017/03/05
+* @date 2017/03/07 22:30
 *
-* @version 0.2
+* @version 0.3
 *
-* @todo God help us all
-* @Christian "Error handling in work"
-* @Christian "-ls in work"
+* @todo God help us all!
+* @Christian > "Error handling in work"
+* @Christian > "-ls in work"
+* @Christian > anpassen der Variablen-Bezeichnungen > Unterrichtsfolien
 */
 
 /*
@@ -104,11 +105,11 @@ int main(int argc, const char *argv[])
 */
 static void do_file(const char* file_name, const char* const* parms)
 {
-	struct stat sb; //metadata
+	struct stat buf; //metadata (atribute)
 	int offset = 2; //helper variable to choose array element
 
 					  
-	if (lstat(file_name, &sb) == -1)
+	if (lstat(file_name, &buf) == -1)
 	{
 		do_error(file_name, parms);      //checks if lstat completes
 		return;
@@ -130,11 +131,11 @@ static void do_file(const char* file_name, const char* const* parms)
 		}
 		if (strcmp(parms[offset], "-ls") == 0)
 		{
-			do_ls_print(file_name, sb);
+			do_ls_print(file_name, buf);
 		}
 		 	offset++;
 	}
-	if (S_ISDIR(sb.st_mode)) //checks if file is a directory
+	if (S_ISDIR(buf.st_mode)) //checks if file is a directory
 	{
 		do_dir(file_name, parms);
 	}
@@ -153,39 +154,50 @@ static void do_file(const char* file_name, const char* const* parms)
 */
 static void do_dir(const char* dir_name, const char* const* parms)
 {
-	DIR *tempDir = NULL;
-	struct dirent *dirpt;
-
-	tempDir = opendir(dir_name);
-	if (tempDir == NULL)
+	DIR *dirp = NULL;
+	const struct dirent *dirent;
+							
+	dirp = opendir(dir_name);
+	if (dirp == NULL)
 	{
 		do_error(dir_name, parms);
 		return;
 	}
+	
+	errno = 0;					//reset errno
 
-	while ((dirpt = readdir(tempDir)) != NULL)
+	while ((dirent = readdir(dirp)) != NULL)
 	{
 		if (errno != 0)
 		{
 			do_error(dir_name, parms);
-			errno = 0;
+			errno = 0;			//reset errno
 			continue;
 		}
 
-		if (strcmp(dirpt->d_name, ".") != 0 && strcmp(dirpt->d_name, "..") != 0)
+		if (strcmp(dirent->d_name, ".") != 0 && strcmp(dirent->d_name, "..") != 0)
 		{
-			char tempPath[strlen(dir_name) + strlen(dirpt->d_name)];
+			char tempPath[strlen(dir_name) + strlen(dirent->d_name)];
 			if (dir_name[strlen(dir_name) - 1] != '/')
 			{
 				strcpy(tempPath, dir_name);
 				strcat(tempPath, "/");
 			}
-			strcat(tempPath, dirpt->d_name);
+			strcat(tempPath, dirent->d_name);
 			do_file(tempPath, parms);
 		}
 	}
-	closedir(tempDir);
+	int closedir(DIR *dirp);
+	
+	if (closedir(dirp) != 0)
+	{
+		do_error(dir_name, parms);
+		return;
+	}
+
 }
+
+
 
 /**
 *
@@ -251,7 +263,7 @@ static void do_usage_print(const char* const* parms) /* how does error handling 
 *  char *getenv(const char *name) searches for the environment string pointed to by name and returns the associated value to the string.
 *  Acronym for P ortable O perating S ystem I nterface UniX.
 */
-static int do_ls_print(const char* file_name, const struct stat sb)
+static int do_ls_print(const char* file_name, const struct stat buf)
 {
 	unsigned int temp = 0;
 	char   mode[] = { "?---------" };
@@ -259,41 +271,45 @@ static int do_ls_print(const char* file_name, const struct stat sb)
 	
 	if (getenv("POSIXLY_CORRECT") == NULL)
 		{
-			temp = ((unsigned int) sb.st_blocks / 2 + sb.st_blocks % 2);
+			temp = ((unsigned int) buf.st_blocks / 2 + buf.st_blocks % 2);
 		}
 
-	printf("%ld %4u ", sb.st_ino, temp);
+	printf("%ld %4u ", buf.st_ino, temp);
 
-	if	(sb.st_mode  & S_IFREG)		mode[0] = '-';		//regular file
-	else if (sb.st_mode  & S_IFDIR)		mode[0] = 'd';		//directory
-	else if (sb.st_mode  & S_IFCHR)		mode[0] = 'c';		//character device
-	else if (sb.st_mode  & S_IFBLK)		mode[0] = 'b';		//block device				
-	else if (sb.st_mode  & S_IFIFO)		mode[0] = 'f';		//FIFO
-	else if (sb.st_mode  & S_IFLNK)		mode[0] = 'l';		//symbolic link
-	else if (sb.st_mode  & S_IFSOCK)	mode[0] = 's';		//socket
-	else					mode[0] = '?';		//unknown 
+	if		(buf.st_mode  & S_IFREG)		mode[0] = '-';		//regular file
+	else if (buf.st_mode  & S_IFDIR)		mode[0] = 'd';		//directory
+	else if (buf.st_mode  & S_IFCHR)		mode[0] = 'c';		//char special file
+	else if (buf.st_mode  & S_IFBLK)		mode[0] = 'b';		//block special file			
+	else if (buf.st_mode  & S_IFIFO)		mode[0] = 'f';		//FIFO(named pipe)
+	else if (buf.st_mode  & S_IFLNK)		mode[0] = 'l';		//symbolic link
+	else if (buf.st_mode  & S_IFSOCK)		mode[0] = 's';		//socket
+	else									mode[0] = '?';		//unknown 
 						
 	
-	if	(sb.st_mode & S_IRUSR )						mode[1] = 'r'; //read	
-	if	(sb.st_mode & S_IWUSR  )					mode[2] = 'w'; //write
-	if	((sb.st_mode & S_IXUSR) && !(sb.st_mode & S_ISUID))		mode[3] = 'x'; //execute without sticky
-	else if (sb.st_mode & S_IXUSR)						mode[3] = 's'; //execute with sticky
-	else if (sb.st_mode & S_ISUID)						mode[3] = 'S'; //not execute with sticky
+	if		(buf.st_mode & S_IRUSR )								mode[1] = 'r'; //user readable	
+	if		(buf.st_mode & S_IWUSR  )								mode[2] = 'w'; //user writeable
+	if		((buf.st_mode & S_IXUSR) && !(buf.st_mode & S_ISUID))	mode[3] = 'x'; //user executable without sticky
+	else if (buf.st_mode & S_IXUSR)									mode[3] = 's'; //user executable
+	else if (buf.st_mode & S_ISUID)									mode[3] = 'S'; //user not executable with sticky
 		
-	if	(sb.st_mode & S_IRGRP)						mode[4] = 'r'; //read	
-	if	(sb.st_mode & S_IWGRP)						mode[5] = 'w'; //write
-	if	((sb.st_mode & S_IXGRP) && !(sb.st_mode & S_ISGID))		mode[6] = 'x'; //execute without sticky
-	else if (sb.st_mode & S_IXGRP)						mode[6] = 's'; //execute with sticky
-	else if (sb.st_mode & S_ISGID)						mode[6] = 'S'; //not execute with sticky
+	if		(buf.st_mode & S_IRGRP)									mode[4] = 'r'; //group readable	
+	if		(buf.st_mode & S_IWGRP)									mode[5] = 'w'; //group writeable
+	if		((buf.st_mode & S_IXGRP) && !(buf.st_mode & S_ISGID))	mode[6] = 'x'; //group executable without sticky
+	else if (buf.st_mode & S_IXGRP)									mode[6] = 's'; //group executable
+	else if (buf.st_mode & S_ISGID)									mode[6] = 'S'; //group not executable with sticky
 
-	if	(sb.st_mode & S_IROTH)						mode[7] = 'r'; //read	
-	if	(sb.st_mode & S_IWOTH)						mode[8] = 'w'; //write
-	if	((sb.st_mode & S_IXOTH) && !(sb.st_mode & S_ISVTX))		mode[9] = 'x'; //execute without sticky
-	else if (sb.st_mode & S_IXOTH)						mode[9] = 't'; //execute with sticky
-	else if (sb.st_mode & S_ISVTX)						mode[9] = 'T'; //not execute with sticky
+	if		(buf.st_mode & S_IROTH)									mode[7] = 'r'; //others readable	
+	if		(buf.st_mode & S_IWOTH)									mode[8] = 'w'; //others writeable
+	if		((buf.st_mode & S_IXOTH) && !(buf.st_mode & S_ISVTX))	mode[9] = 'x'; //others executable without sticky
+	else if (buf.st_mode & S_IXOTH)									mode[9] = 't'; //others executable
+	else if (buf.st_mode & S_ISVTX)									mode[9] = 'T'; //others save swapped test after use (sticky)
+
 
 	
-	printf("%s%4.0d\t\t\t    %s\n", mode,sb.st_nlink,file_name);	
+
+
+	
+	printf("%s%4.0d\t\t\t    %s\n", mode,buf.st_nlink,file_name);	
 	
 	return EXIT_SUCCESS;
 }
