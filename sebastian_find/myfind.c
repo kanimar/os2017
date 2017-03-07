@@ -7,7 +7,7 @@
 * @author Maria Karnikova <ic16b002@technikum-wien.at>
 * @author Christian Fuhry <ic16b055@technikum-wien.at>
 * @author Sebastian Boehm <ic16b032@technikum-wien.at>
-* @date 2017/03/07 22:30
+* @date 2017/03/07 23:30
 *
 * @version 0.3
 *
@@ -57,7 +57,7 @@ static void do_dir(const char* dir_name, const char* const* parms);
 static int do_check(const char* const* parms);
 static void do_error(const char* file_name, const char* const* parms);
 static void do_comp_print(const char* file_name);
-static int do_ls_print(const char* file_name, const struct stat sb);
+static int do_ls_print(const char* file_name, const char* const* parms, const struct stat sb);
 /**
 *
 * \brief The start of myfind
@@ -131,7 +131,7 @@ static void do_file(const char* file_name, const char* const* parms)
 		}
 		if (strcmp(parms[offset], "-ls") == 0)
 		{
-			do_ls_print(file_name, buf);
+			do_ls_print(file_name, parms, buf);
 		}
 		 	offset++;
 	}
@@ -263,18 +263,21 @@ static void do_usage_print(const char* const* parms) /* how does error handling 
 *  char *getenv(const char *name) searches for the environment string pointed to by name and returns the associated value to the string.
 *  Acronym for P ortable O perating S ystem I nterface UniX.
 */
-static int do_ls_print(const char* file_name, const struct stat buf)
+static int do_ls_print(const char* file_name, const char* const* parms, const struct stat buf)
 {
-	unsigned int temp = 0;
-	char   mode[] = { "?---------" };
+	const struct passwd *user = NULL;
 	
+	unsigned int blocks = 0;
+	char   mode[] = { "?---------" };
+	errno = 0;			//reset errno
+
 	
 	if (getenv("POSIXLY_CORRECT") == NULL)
 		{
-			temp = ((unsigned int) buf.st_blocks / 2 + buf.st_blocks % 2);
+			blocks = ((unsigned int) buf.st_blocks / 2 + buf.st_blocks % 2);
 		}
 
-	printf("%ld %4u ", buf.st_ino, temp);
+	printf("%ld %4u ", buf.st_ino, blocks);
 
 	if		(buf.st_mode  & S_IFREG)		mode[0] = '-';		//regular file
 	else if (buf.st_mode  & S_IFDIR)		mode[0] = 'd';		//directory
@@ -286,30 +289,47 @@ static int do_ls_print(const char* file_name, const struct stat buf)
 	else									mode[0] = '?';		//unknown 
 						
 	
-	if	(buf.st_mode & S_IRUSR )								mode[1] = 'r'; //user readable	
-	if	(buf.st_mode & S_IWUSR  )								mode[2] = 'w'; //user writeable
-	if	((buf.st_mode & S_IXUSR) && !(buf.st_mode & S_ISUID))	mode[3] = 'x'; //user executable without sticky
+	if		(buf.st_mode & S_IRUSR )								mode[1] = 'r'; //user readable	
+	if		(buf.st_mode & S_IWUSR  )								mode[2] = 'w'; //user writeable
+	if		((buf.st_mode & S_IXUSR) && !(buf.st_mode & S_ISUID))	mode[3] = 'x'; //user executable without sticky
 	else if (buf.st_mode & S_IXUSR)									mode[3] = 's'; //user executable
 	else if (buf.st_mode & S_ISUID)									mode[3] = 'S'; //user not executable with sticky
 		
-	if	(buf.st_mode & S_IRGRP)									mode[4] = 'r'; //group readable	
-	if	(buf.st_mode & S_IWGRP)									mode[5] = 'w'; //group writeable
-	if	((buf.st_mode & S_IXGRP) && !(buf.st_mode & S_ISGID))	mode[6] = 'x'; //group executable without sticky
+	if		(buf.st_mode & S_IRGRP)									mode[4] = 'r'; //group readable	
+	if		(buf.st_mode & S_IWGRP)									mode[5] = 'w'; //group writeable
+	if		((buf.st_mode & S_IXGRP) && !(buf.st_mode & S_ISGID))	mode[6] = 'x'; //group executable without sticky
 	else if (buf.st_mode & S_IXGRP)									mode[6] = 's'; //group executable
 	else if (buf.st_mode & S_ISGID)									mode[6] = 'S'; //group not executable with sticky
 
-	if	(buf.st_mode & S_IROTH)									mode[7] = 'r'; //others readable	
-	if	(buf.st_mode & S_IWOTH)									mode[8] = 'w'; //others writeable
-	if	((buf.st_mode & S_IXOTH) && !(buf.st_mode & S_ISVTX))	mode[9] = 'x'; //others executable without sticky
+	if		(buf.st_mode & S_IROTH)									mode[7] = 'r'; //others readable	
+	if		(buf.st_mode & S_IWOTH)									mode[8] = 'w'; //others writeable
+	if		((buf.st_mode & S_IXOTH) && !(buf.st_mode & S_ISVTX))	mode[9] = 'x'; //others executable without sticky
 	else if (buf.st_mode & S_IXOTH)									mode[9] = 't'; //others executable
 	else if (buf.st_mode & S_ISVTX)									mode[9] = 'T'; //others save swapped test after use (sticky)
 
 
 	
+	
+																				   
+																				   
+																				   
+																				   
+																				   
+																				   //user = getpwuid(buf.st_uid)
+	//errno = 0;				//reset errno
 
+	//if (user == NULL)
+	//	if (errno != 0)
+		//{
+		//	do_error(dir_name, parms);
+		//	errno = 0;			//reset errno
+		//	return;
+	//	}
 
 	
-	printf("%s%4.0d\t\t\t    %s\n", mode,buf.st_nlink,file_name);	
+	
+	
+	printf("%s%4.0d\t\t\t  %ld  %s\n", mode,buf.st_nlink, buf.st_size, file_name);
 	
 	return EXIT_SUCCESS;
 }
@@ -341,7 +361,7 @@ static int do_check(const char* const* parms)
 				do_usage_print(parms);
 				return EXIT_FAILURE;
 			}
-			
+			offset += 2;
 		}
 		else if (strcmp(parms[offset], "-print") == 0 ||
 			strcmp(parms[offset], "-ls") == 0 ||
