@@ -123,9 +123,6 @@ static void do_file(const char* file_name, const char* const* parms)
 			if (parms[offset] != NULL)
 			{
 				print_needed = do_comp_user(buf.st_uid, parms[offset]);
-				do_comp_print(file_name);
-				offset++;
-				if(parms[offset] == NULL) break;
 			}
 			else
 			{
@@ -240,7 +237,6 @@ static int do_comp_user(const uid_t userid, const char * userparameter)
 	pwd = getpwnam(userparameter);
 	if(pwd == NULL) //A null pointer is returned if the requested entry is not found, or an error occurs.
 	{
-		printf("Fehler in Zeile 242");
 		exit(EXIT_FAILURE);
 	}
 	else if(pwd != NULL)
@@ -255,7 +251,6 @@ static int do_comp_user(const uid_t userid, const char * userparameter)
 		uid = strtol(userparameter, &endptr, 10);
 		if(strcmp(endptr, "/0") != 0)
 		{
-			printf("Fehler in Zeile 257");
 			exit(EXIT_FAILURE); //strtol couldnt finish converting
 		}
 		if(userid == uid)
