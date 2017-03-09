@@ -87,7 +87,7 @@ int main(int argc, const char *argv[])
 	}
 	else
 	{
-		do_usage_print(argv);
+		exit(EXIT_FAILURE);
 	}
 	return EXIT_SUCCESS;
 }
@@ -138,12 +138,12 @@ static void do_file(const char* file_name, const char* const* parms)
 		comp_name(file_name, parms[parm_cnt], FNM_NOESCAPE);
 		}
 		} */
-		if (strcmp(parms[offset], "-print") == 0)
+		else if (strcmp(parms[offset], "-print") == 0)
 		{
 			do_comp_print(file_name);
 
 		}
-		if (strcmp(parms[offset], "-ls") == 0)
+		else if (strcmp(parms[offset], "-ls") == 0)
 		{
 			do_ls_print(file_name, parms, buf);
 		}
