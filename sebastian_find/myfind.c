@@ -4,7 +4,7 @@
 * Beispiel 1
 *
 * @author Alexander Pirka <ic16b031@technikum-wien.at>
-* @author Maria Karnikova <ic16b002@technikum-wien.at>
+* @author Maria Kanikova <ic16b002@technikum-wien.at>
 * @author Christian Fuhry <ic16b055@technikum-wien.at>
 * @author Sebastian Boehm <ic16b032@technikum-wien.at>
 * @date 2017/03/07 23:30
@@ -55,6 +55,7 @@ static void do_file(const char* file_name, const char* const* parms);
 static void do_dir(const char* dir_name, const char* const* parms);
 /*static void comp_name(const char* file_name, const char* const* parms, const int* fnm);*/
 static int do_check(const char* const* parms);
+static int do_comp_user(const uid_t userid, const char * userparameter);
 static void do_error(const char* file_name, const char* const* parms);
 static void do_comp_print(const char* file_name);
 static int do_ls_print(const char* file_name, const char* const* parms, const struct stat sb);
@@ -107,7 +108,7 @@ static void do_file(const char* file_name, const char* const* parms)
 {
 	struct stat buf; //metadata (atribute)
 	int offset = 2; //helper variable to choose array element
-
+	int print_needed = 0;
 
 	if (lstat(file_name, &buf) == -1)
 	{
@@ -116,6 +117,22 @@ static void do_file(const char* file_name, const char* const* parms)
 	}
 	while (parms[offset] != NULL)
 	{
+		if (strcmp(parms[offset], "-user") == 0)
+		{
+			offset++; // <action> -user needs another argument user_id or user_name
+			if (parms[offset] != NULL)
+			{
+				print_needed = do_comp_user(buf.st_uid, parms[offset]);
+				do_comp_print(file_name);
+				offset++;
+				if(parms[offset] == NULL) break;
+			}
+			else
+			{
+				do_error(file_name, parms);
+				exit(EXIT_FAILURE);
+			}
+		}
 		/*		 if (strcmp(parms[parm_cnt], '-name') == 0) //original find: find . -name test -> need argument after -name
 		{
 		parm_cnt++;
@@ -134,6 +151,10 @@ static void do_file(const char* file_name, const char* const* parms)
 			do_ls_print(file_name, parms, buf);
 		}
 		offset++;
+	}
+	if (print_needed > 0)
+	{
+		do_comp_print(file_name);
 	}
 	if (S_ISDIR(buf.st_mode)) //checks if file is a directory
 	{
@@ -197,7 +218,58 @@ static void do_dir(const char* dir_name, const char* const* parms)
 
 }
 
-
+/**
+*
+* \brief do_comp_user compares parameter with uid and uname
+*
+* This function compares the argument after "-user" with the uid and username of the file.
+* It returns 1 if the comparation is successful and 0 if unsuccessful.
+*
+* \param userid is the user id of the file.
+* \param userparameter is the argument after "-user"
+*
+* \return 1 if successful 0 if unsuccessful
+*
+*/
+static int do_comp_user(const uid_t userid, const char * userparameter)
+{
+	struct passwd *pwd = NULL;
+	char *endptr = NULL;
+	long int uid = 0;
+	
+	pwd = getpwnam(userparameter);
+	if(pwd == NULL) //A null pointer is returned if the requested entry is not found, or an error occurs.
+	{
+		printf("Fehler in Zeile 242");
+		exit(EXIT_FAILURE);
+	}
+	else if(pwd != NULL)
+	{
+		if(pwd->pw_uid == userid)
+		{
+			return 1;
+		}
+	}
+	else
+	{
+		uid = strtol(userparameter, &endptr, 10);
+		if(strcmp(endptr, "/0") != 0)
+		{
+			printf("Fehler in Zeile 257");
+			exit(EXIT_FAILURE); //strtol couldnt finish converting
+		}
+		if(userid == uid)
+		{
+			return 1; 
+		}
+		else
+		{
+			fprintf(stderr, "-user: %s is not the name of a known user\n", userparameter);
+			exit(EXIT_FAILURE);
+		}
+	}
+	return 0;
+}
 
 /**
 *
