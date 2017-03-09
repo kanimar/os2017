@@ -74,7 +74,7 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 *
 */
 int main(int argc, const char *argv[])
-{	
+{
 	if (argc < 2)
 	{
 		do_usage_print(argv);
@@ -108,7 +108,7 @@ static void do_file(const char* file_name, const char* const* parms)
 	struct stat buf; //metadata (atribute)
 	int offset = 2; //helper variable to choose array element
 
-					  
+
 	if (lstat(file_name, &buf) == -1)
 	{
 		do_error(file_name, parms);      //checks if lstat completes
@@ -133,7 +133,7 @@ static void do_file(const char* file_name, const char* const* parms)
 		{
 			do_ls_print(file_name, parms, buf);
 		}
-		 	offset++;
+		offset++;
 	}
 	if (S_ISDIR(buf.st_mode)) //checks if file is a directory
 	{
@@ -156,14 +156,14 @@ static void do_dir(const char* dir_name, const char* const* parms)
 {
 	DIR *dirp = NULL;
 	const struct dirent *dirent;
-							
+
 	dirp = opendir(dir_name);
 	if (dirp == NULL)
 	{
 		do_error(dir_name, parms);
 		return;
 	}
-	
+
 	errno = 0;					//reset errno
 
 	while ((dirent = readdir(dirp)) != NULL)
@@ -188,7 +188,7 @@ static void do_dir(const char* dir_name, const char* const* parms)
 		}
 	}
 	int closedir(DIR *dirp);
-	
+
 	if (closedir(dirp) != 0)
 	{
 		do_error(dir_name, parms);
@@ -231,7 +231,6 @@ static void do_comp_print(const char* file_name)
 */
 /*static void comp_name(const char* file_name, const char* const* parms, const int* fnm)
 {
-
 }*/
 
 /**
@@ -243,16 +242,16 @@ static void do_comp_print(const char* file_name)
 * \param parms is list of parameters typed as parameters of function
 *
 * \ don't work		"-type <xyz>\n"
-			"-user <name/uid>\n"
-			"-nouser\n"
-			"-name <pattern>\n"
-			"-path <pattern>\n"
+"-user <name/uid>\n"
+"-nouser\n"
+"-name <pattern>\n"
+"-path <pattern>\n"
 *
 */
 static void do_usage_print(const char* const* parms) /* how does error handling in printf work?? */
 {
-	fprintf(stderr,"Usage: %s <file or directory> <aktion> \n"
-		
+	fprintf(stderr, "Usage: %s <file or directory> <aktion> \n"
+
 		"-print\n"
 		"-ls\n",
 		*parms);
@@ -265,72 +264,119 @@ static void do_usage_print(const char* const* parms) /* how does error handling 
 */
 static int do_ls_print(const char* file_name, const char* const* parms, const struct stat buf)
 {
-	const struct passwd *user = NULL;
-	
+	const struct passwd * user = NULL;
+	const struct group* group = NULL;
+	const struct tm* time = NULL;
+
 	unsigned int blocks = 0;
-	char   mode[] = { "?---------" };
+	char mode[] = { "?---------" };
 	errno = 0;			//reset errno
 
-	
-	if (getenv("POSIXLY_CORRECT") == NULL)
-		{
-			blocks = ((unsigned int) buf.st_blocks / 2 + buf.st_blocks % 2);
-		}
+	char* do_user = "";
+	char* do_group = "";
 
-	printf("%ld %4u ", buf.st_ino, blocks);
 
-	if	(buf.st_mode  & S_IFREG)		mode[0] = '-';		//regular file
+	char uid[14];
+	char gid[14];
+
+	char month[5] = { 0 };
+	char do_time[14] = { 0 };
+
+
+	if		(buf.st_mode  & S_IFREG)		mode[0] = '-';		//regular file
 	else if (buf.st_mode  & S_IFDIR)		mode[0] = 'd';		//directory
 	else if (buf.st_mode  & S_IFCHR)		mode[0] = 'c';		//char special file
 	else if (buf.st_mode  & S_IFBLK)		mode[0] = 'b';		//block special file			
 	else if (buf.st_mode  & S_IFIFO)		mode[0] = 'f';		//FIFO(named pipe)
 	else if (buf.st_mode  & S_IFLNK)		mode[0] = 'l';		//symbolic link
 	else if (buf.st_mode  & S_IFSOCK)		mode[0] = 's';		//socket
-	else						mode[0] = '?';		//unknown 
-						
-	
-	if	(buf.st_mode & S_IRUSR )							mode[1] = 'r'; //user readable	
-	if	(buf.st_mode & S_IWUSR  )							mode[2] = 'w'; //user writeable
-	if	((buf.st_mode & S_IXUSR) && !(buf.st_mode & S_ISUID))				mode[3] = 'x'; //user executable without sticky
-	else if (buf.st_mode & S_IXUSR)								mode[3] = 's'; //user executable
-	else if (buf.st_mode & S_ISUID)								mode[3] = 'S'; //user not executable with sticky
-		
-	if	(buf.st_mode & S_IRGRP)								mode[4] = 'r'; //group readable	
-	if	(buf.st_mode & S_IWGRP)								mode[5] = 'w'; //group writeable
-	if	((buf.st_mode & S_IXGRP) && !(buf.st_mode & S_ISGID))				mode[6] = 'x'; //group executable without sticky
-	else if (buf.st_mode & S_IXGRP)								mode[6] = 's'; //group executable
-	else if (buf.st_mode & S_ISGID)								mode[6] = 'S'; //group not executable with sticky
-
-	if	(buf.st_mode & S_IROTH)								mode[7] = 'r'; //others readable	
-	if	(buf.st_mode & S_IWOTH)								mode[8] = 'w'; //others writeable
-	if	((buf.st_mode & S_IXOTH) && !(buf.st_mode & S_ISVTX))				mode[9] = 'x'; //others executable without sticky
-	else if (buf.st_mode & S_IXOTH)								mode[9] = 't'; //others executable
-	else if (buf.st_mode & S_ISVTX)								mode[9] = 'T'; //others save swapped test after use (sticky)
+	else									mode[0] = '?';		//unknown 
 
 
-	
-	
-																				   
-																				   
-																				   
-																				   
-																				   
-																				   //user = getpwuid(buf.st_uid)
-	//errno = 0;				//reset errno
+	if		(buf.st_mode & S_IRUSR)									mode[1] = 'r'; //user readable	
+	if		(buf.st_mode & S_IWUSR)									mode[2] = 'w'; //user writeable
+	if		((buf.st_mode & S_IXUSR) && !(buf.st_mode & S_ISUID))	mode[3] = 'x'; //user executable without sticky
+	else if (buf.st_mode & S_IXUSR)									mode[3] = 's'; //user executable
+	else if (buf.st_mode & S_ISUID)									mode[3] = 'S'; //user not executable with sticky
 
-	//if (user == NULL)
-	//	if (errno != 0)
-		//{
-		//	do_error(dir_name, parms);
-		//	errno = 0;			//reset errno
-		//	return;
-	//	}
+	if		(buf.st_mode & S_IRGRP)									mode[4] = 'r'; //group readable	
+	if		(buf.st_mode & S_IWGRP)									mode[5] = 'w'; //group writeable
+	if		((buf.st_mode & S_IXGRP) && !(buf.st_mode & S_ISGID))	mode[6] = 'x'; //group executable without sticky
+	else if (buf.st_mode & S_IXGRP)									mode[6] = 's'; //group executable
+	else if (buf.st_mode & S_ISGID)									mode[6] = 'S'; //group not executable with sticky
 
-	
-	
-	
-	printf("%s%4.0d\t\t\t  %ld  %s\n", mode,buf.st_nlink, buf.st_size, file_name);
-	
+	if		(buf.st_mode & S_IROTH)									mode[7] = 'r'; //others readable	
+	if		(buf.st_mode & S_IWOTH)									mode[8] = 'w'; //others writeable
+	if		((buf.st_mode & S_IXOTH) && !(buf.st_mode & S_ISVTX))	mode[9] = 'x'; //others executable without sticky
+	else if (buf.st_mode & S_IXOTH)									mode[9] = 't'; //others executable
+	else if (buf.st_mode & S_ISVTX)									mode[9] = 'T'; //others save swapped test after use (sticky)
+
+
+	if (mode[0] != 'l')
+	{
+		blocks = (unsigned int)buf.st_blocks;
+
+		if (getenv("POSIXLY_CORRECT") == NULL)
+		{
+			blocks = ((unsigned int)buf.st_blocks);
+			blocks = blocks / 2 + buf.st_blocks % 2;
+		}
+	}
+
+	if ((user = getpwuid(buf.st_uid)) == NULL || user->pw_name == NULL)
+	{
+		if (errno != 0)
+		{
+
+			do_error(file_name, parms);
+		}
+		else
+		{
+
+			snprintf(uid, sizeof(uid), "%d", buf.st_uid);
+			do_user = uid;
+		}
+	}
+	else
+	{
+		do_user = user->pw_name;
+	}
+	errno = 0;
+
+	if ((group = getgrgid(buf.st_gid)) == NULL || (group->gr_name == NULL))
+	{
+		if (errno != 0)
+		{
+
+			do_error(file_name, parms);
+		}
+		else
+		{
+
+			snprintf(gid, sizeof(gid), "%d", buf.st_gid);
+			do_group = gid;
+		}
+	}
+	else
+	{
+		do_group = group->gr_name;
+	}
+	errno = 0;
+
+	time = localtime(&(buf.st_mtime));
+
+	strftime(month, sizeof(month), "%b", time);
+
+	if (sprintf(do_time, "%s %2d %02d:%02d", month, time->tm_mday, time->tm_hour, time->tm_min) < 0)
+	{
+
+		fprintf(stderr, "%s: do_time error", *parms);
+	}
+
+
+
+	printf("%ld %4u %s%4.0d %s %s %8lu %s %s\n", buf.st_ino, blocks, mode, buf.st_nlink, do_user, do_group, buf.st_size, do_time, file_name);
+
 	return EXIT_SUCCESS;
 }
 /**
@@ -390,6 +436,3 @@ static void do_error(const char* file_name, const char* const* parms)
 /*
 * =================================================================== eof ==
 */
-
-
-
