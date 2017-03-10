@@ -337,28 +337,32 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 
 	unsigned int blocks = 0;
 	char mode[] = { "?---------" };
+	
+	int symb_link_length = 0;
+	char symb_link_file[strlen(file_name)];
+	char symb_link_string[buf.st_size+1];
+	
 	errno = 0;			//reset errno
 
 	char* do_user = "";
 	char* do_group = "";
+	
+	char uid[80] = { 0 };
+	char gid[80] = { 0 };
+
+	char month[80] = { 0 };
+	char do_time[80] = { 0 };
 
 
-	char uid[14];
-	char gid[14];
-
-	char month[5] = { 0 };
-	char do_time[14] = { 0 };
-
-
-	if		(buf.st_mode  & S_IFREG)		mode[0] = '-';		//regular file
-	else if (buf.st_mode  & S_IFDIR)		mode[0] = 'd';		//directory
-	else if (buf.st_mode  & S_IFCHR)		mode[0] = 'c';		//char special file
-	else if (buf.st_mode  & S_IFBLK)		mode[0] = 'b';		//block special file			
-	else if (buf.st_mode  & S_IFIFO)		mode[0] = 'f';		//FIFO(named pipe)
-	else if (buf.st_mode  & S_IFLNK)		mode[0] = 'l';		//symbolic link
-	else if (buf.st_mode  & S_IFSOCK)		mode[0] = 's';		//socket
-	else									mode[0] = '?';		//unknown 
-
+	if		(S_ISREG(buf.st_mode))		mode[0] = '-';		//regular file
+	else if (S_ISDIR(buf.st_mode))		mode[0] = 'd';		//directory
+	else if (S_ISCHR(buf.st_mode))		mode[0] = 'c';		//char special file
+	else if (S_ISBLK(buf.st_mode))		mode[0] = 'b';		//block special file			
+	else if (S_ISFIFO(buf.st_mode))		mode[0] = 'f';		//FIFO(named pipe)
+	else if (S_ISLNK (buf.st_mode))		mode[0] = 'l';		//symbolic link
+	else if (S_ISSOCK(buf.st_mode ))	mode[0] = 's';		//socket
+	else								mode[0] = '?';		//unknown 
+	
 
 	if		(buf.st_mode & S_IRUSR)									mode[1] = 'r'; //user readable	
 	if		(buf.st_mode & S_IWUSR)									mode[2] = 'w'; //user writeable
@@ -378,6 +382,7 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 	else if (buf.st_mode & S_IXOTH)									mode[9] = 't'; //others executable
 	else if (buf.st_mode & S_ISVTX)									mode[9] = 'T'; //others save swapped test after use (sticky)
 
+	strcpy(symb_link_file, file_name);
 
 	if (mode[0] != 'l')
 	{
@@ -388,8 +393,24 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 			blocks = ((unsigned int)buf.st_blocks);
 			blocks = blocks / 2 + buf.st_blocks % 2;
 		}
+	}	
+	
+	if (mode[0] == 'l')
+	{		
+		symb_link_length = readlink(file_name, symb_link_string, buf.st_size);		
+		symb_link_string[symb_link_length] = '\0';   //ending for readlink '/0'
+		
+		if (symb_link_length)
+		{		
+			snprintf(symb_link_file, symb_link_length + strlen(file_name) + 7, "%s -> %s", file_name, symb_link_string);			
+		}
+		else
+		{
+			fprintf(stderr, "%s: Symbolic link error: %s", *parms, strerror(errno));
+		}
 	}
 
+	errno = 0;  //reset errno
 	if ((user = getpwuid(buf.st_uid)) == NULL || user->pw_name == NULL)
 	{
 		if (errno != 0)
@@ -399,7 +420,6 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 		}
 		else
 		{
-
 			snprintf(uid, sizeof(uid), "%d", buf.st_uid);
 			do_user = uid;
 		}
@@ -408,18 +428,16 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 	{
 		do_user = user->pw_name;
 	}
-	errno = 0;
 
+	errno = 0;  //reset errno
 	if ((group = getgrgid(buf.st_gid)) == NULL || (group->gr_name == NULL))
 	{
 		if (errno != 0)
 		{
-
 			do_error(file_name, parms);
 		}
 		else
 		{
-
 			snprintf(gid, sizeof(gid), "%d", buf.st_gid);
 			do_group = gid;
 		}
@@ -428,22 +446,68 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 	{
 		do_group = group->gr_name;
 	}
-	errno = 0;
+	errno = 0;  //reset errno
 
-	time = localtime(&(buf.st_mtime));
+	time = localtime(&(buf.st_mtime));			
 
-	strftime(month, sizeof(month), "%b", time);
+	strftime(month, sizeof(month), "%b", time);  //formatted month 
 
 	if (sprintf(do_time, "%s %2d %02d:%02d", month, time->tm_mday, time->tm_hour, time->tm_min) < 0)
 	{
-
 		fprintf(stderr, "%s: do_time error", *parms);
 	}
 
+	if (printf("%ld %4u %s%4.0d %s %s %8lu %s %s\n", buf.st_ino, blocks, mode, buf.st_nlink, do_user, do_group, buf.st_size, do_time, symb_link_file) < 0)
+	{
+		fprintf(stderr, "%s: -ls error %s", *parms, file_name);
+		return EXIT_FAILURE;
+	}
 
-
-	printf("%ld %4u %s%4.0d %s %s %8lu %s %s\n", buf.st_ino, blocks, mode, buf.st_nlink, do_user, do_group, buf.st_size, do_time, file_name);
-
+	return EXIT_SUCCESS;
+}
+/**
+*
+* \brief parameter_check compares entered parameters with set parameters
+*
+* This function compares the arguments entered with the set parameters.
+* If returned unsuccessful, usage_print shall be called.
+*
+* \param parms is list of parameters typed as parameters of function
+*
+* \return 0 if successful 1 if unsuccessful
+*
+*/
+static int do_check(const char* const* parms)
+{
+	int offset = 2;
+	while (parms[offset] != NULL)
+	{
+		if (strcmp(parms[offset], "-user") == 0 ||
+			strcmp(parms[offset], "-name") == 0 ||
+			strcmp(parms[offset], "-type") == 0 ||
+			strcmp(parms[offset], "-path") == 0 ||
+			strcmp(parms[offset], "-group") == 0)
+		{
+			if (parms[offset + 1] == NULL)
+			{
+				do_usage_print(parms);
+				return EXIT_FAILURE;
+			}
+			offset += 2;
+		}
+		else if (strcmp(parms[offset], "-print") == 0 ||
+			strcmp(parms[offset], "-ls") == 0 ||
+			strcmp(parms[offset], "-nouser") == 0 ||
+			strcmp(parms[offset], "-nogroup") == 0)
+		{
+			offset++;
+		}
+		else
+		{
+			do_usage_print(parms);
+			return EXIT_FAILURE;
+		}
+	}
 	return EXIT_SUCCESS;
 }
 /**
