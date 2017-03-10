@@ -174,7 +174,8 @@ static void do_dir(const char* dir_name, const char* const* parms)
 {
 	DIR *dirp = NULL;
 	const struct dirent *dirent;
-
+	int offset = 2; //helper variable to choose array element
+	
 	dirp = opendir(dir_name);
 	if (dirp == NULL)
 	{
@@ -193,6 +194,18 @@ static void do_dir(const char* dir_name, const char* const* parms)
 			continue;
 		}
 
+		if ((strcmp(dirent->d_name, ".." ) == 0) && (parms[offset+1] != NULL))
+		{
+			if (strcmp(dirent->d_name, "..") != 0) //do not print ..
+			{
+				do_comp_print(dirent->d_name);
+			}	
+		else if ((strcmp(dirent->d_name, "..") == 0) && (parms[offset + 1] == NULL))
+			{
+			do_usage_print(parms); /////////eigentlich sollte er -print ausspucken (in arbeit)
+			}
+		}
+	
 		if (strcmp(dirent->d_name, ".") != 0 && strcmp(dirent->d_name, "..") != 0)
 		{
 			char tempPath[strlen(dir_name) + strlen(dirent->d_name)];
@@ -204,6 +217,7 @@ static void do_dir(const char* dir_name, const char* const* parms)
 			strcat(tempPath, dirent->d_name);
 			do_file(tempPath, parms);
 		}
+		offset++;
 	}
 	int closedir(DIR *dirp);
 
@@ -233,15 +247,15 @@ static int do_comp_user(const uid_t userid, const char * userparameter)
 	struct passwd *pwd = NULL;
 	char *endptr = NULL;
 	long int uid = 0;
-	
+
 	pwd = getpwnam(userparameter);
-	if(pwd == NULL) //A null pointer is returned if the requested entry is not found, or an error occurs.
+	if (pwd == NULL) //A null pointer is returned if the requested entry is not found, or an error occurs.
 	{
 		exit(EXIT_FAILURE);
 	}
-	else if(pwd != NULL)
+	else if (pwd != NULL)
 	{
-		if(pwd->pw_uid == userid)
+		if (pwd->pw_uid == userid)
 		{
 			return 1;
 		}
@@ -249,13 +263,13 @@ static int do_comp_user(const uid_t userid, const char * userparameter)
 	else
 	{
 		uid = strtol(userparameter, &endptr, 10);
-		if(strcmp(endptr, "/0") != 0)
+		if (strcmp(endptr, "/0") != 0)
 		{
 			exit(EXIT_FAILURE); //strtol couldnt finish converting
 		}
-		if(userid == uid)
+		if (userid == uid)
 		{
-			return 1; 
+			return 1;
 		}
 		else
 		{
@@ -280,7 +294,10 @@ static int do_comp_user(const uid_t userid, const char * userparameter)
 
 static void do_comp_print(const char* file_name)
 {
-	printf("%s\n", file_name);	 //error handling???
+	if (printf("%s\n", file_name) < 0) 
+	{
+		printf("do_comp_print error");
+	}
 }
 
 /**
@@ -322,6 +339,7 @@ static void do_usage_print(const char* const* parms) /* how does error handling 
 		"-print\n"
 		"-ls\n",
 		*parms);
+	exit(EXIT_FAILURE);
 }
 /**
 *
@@ -465,51 +483,6 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 		return EXIT_FAILURE;
 	}
 
-	return EXIT_SUCCESS;
-}
-/**
-*
-* \brief parameter_check compares entered parameters with set parameters
-*
-* This function compares the arguments entered with the set parameters.
-* If returned unsuccessful, usage_print shall be called.
-*
-* \param parms is list of parameters typed as parameters of function
-*
-* \return 0 if successful 1 if unsuccessful
-*
-*/
-static int do_check(const char* const* parms)
-{
-	int offset = 2;
-	while (parms[offset] != NULL)
-	{
-		if (strcmp(parms[offset], "-user") == 0 ||
-			strcmp(parms[offset], "-name") == 0 ||
-			strcmp(parms[offset], "-type") == 0 ||
-			strcmp(parms[offset], "-path") == 0 ||
-			strcmp(parms[offset], "-group") == 0)
-		{
-			if (parms[offset + 1] == NULL)
-			{
-				do_usage_print(parms);
-				return EXIT_FAILURE;
-			}
-			offset += 2;
-		}
-		else if (strcmp(parms[offset], "-print") == 0 ||
-			strcmp(parms[offset], "-ls") == 0 ||
-			strcmp(parms[offset], "-nouser") == 0 ||
-			strcmp(parms[offset], "-nogroup") == 0)
-		{
-			offset++;
-		}
-		else
-		{
-			do_usage_print(parms);
-			return EXIT_FAILURE;
-		}
-	}
 	return EXIT_SUCCESS;
 }
 /**
