@@ -338,10 +338,11 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 	unsigned int blocks = 0;
 	char mode[] = { "?---------" };
 	
+	char do_name[strlen(file_name)];
 	int symb_link_length = 0;
-	char symb_link_file[strlen(file_name)];
-	char symb_link_string[buf.st_size+1];
-	
+	char symb_link_string[buf.st_size];
+	const char arrow [] = { " -> " };
+
 	errno = 0;			//reset errno
 
 	char* do_user = "";
@@ -382,7 +383,7 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 	else if (buf.st_mode & S_IXOTH)									mode[9] = 't'; //others executable
 	else if (buf.st_mode & S_ISVTX)									mode[9] = 'T'; //others save swapped test after use (sticky)
 
-	strcpy(symb_link_file, file_name);
+	strcpy(do_name, file_name);
 
 	if (mode[0] != 'l')
 	{
@@ -402,7 +403,8 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 		
 		if (symb_link_length)
 		{		
-			snprintf(symb_link_file, symb_link_length + strlen(file_name) + 7, "%s -> %s", file_name, symb_link_string);			
+		strcat(do_name, arrow);
+		strcat(do_name, symb_link_string);			
 		}
 		else
 		{
@@ -457,7 +459,7 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 		fprintf(stderr, "%s: do_time error", *parms);
 	}
 
-	if (printf("%ld %4u %s%4.0d %s %s %8lu %s %s\n", buf.st_ino, blocks, mode, buf.st_nlink, do_user, do_group, buf.st_size, do_time, symb_link_file) < 0)
+	if (printf("%ld %4u %s%4.0d %s %s %8lu %s %s\n", buf.st_ino, blocks, mode, buf.st_nlink, do_user, do_group, buf.st_size, do_time, do_name) < 0)
 	{
 		fprintf(stderr, "%s: -ls error %s", *parms, file_name);
 		return EXIT_FAILURE;
