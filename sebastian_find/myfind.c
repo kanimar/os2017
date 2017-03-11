@@ -7,13 +7,14 @@
 * @author Maria Kanikova <ic16b002@technikum-wien.at>
 * @author Christian Fuhry <ic16b055@technikum-wien.at>
 * @author Sebastian Boehm <ic16b032@technikum-wien.at>
-* @date 2017/03/07 23:30
+* @date 2017/03/07 16:30
 *
-* @version 0.3
+* @version 0.4
 *
 * @todo God help us all!
 * @Christian > "Error handling in work"
 * @Christian > "-ls in work"
+* @Christian > "nouser finished" noch nicht komplett getestet
 * @Christian > anpassen der Variablen-Bezeichnungen > Unterrichtsfolien
 */
 
@@ -56,9 +57,10 @@ static void do_dir(const char* dir_name, const char* const* parms);
 /*static void comp_name(const char* file_name, const char* const* parms, const int* fnm);*/
 static int do_check(const char* const* parms);
 static int do_comp_user(const uid_t userid, const char * userparameter);
+static int do_comp_no_user(const char* file_name, const char* const* parms, const struct stat buf);
 static void do_error(const char* file_name, const char* const* parms);
 static void do_comp_print(const char* file_name);
-static int do_ls_print(const char* file_name, const char* const* parms, const struct stat sb);
+static int do_ls_print(const char* file_name, const char* const* parms, const struct stat buf);
 /**
 *
 * \brief The start of myfind
@@ -130,6 +132,20 @@ static void do_file(const char* file_name, const char* const* parms)
 				exit(EXIT_FAILURE);
 			}
 		}
+		if (strcmp(parms[offset], "-nouser") == 0)
+		{
+			offset++; // no <action> 
+			if (parms[offset] == NULL)
+			{
+				print_needed = do_comp_no_user(file_name, parms, buf);
+			}
+			else
+			{
+				do_error(file_name, parms);
+				exit(EXIT_FAILURE);
+			}
+		}
+	
 		/*		 if (strcmp(parms[parm_cnt], '-name') == 0) //original find: find . -name test -> need argument after -name
 		{
 		parm_cnt++;
@@ -175,7 +191,7 @@ static void do_dir(const char* dir_name, const char* const* parms)
 	DIR *dirp = NULL;
 	const struct dirent *dirent;
 	int offset = 2; //helper variable to choose array element
-	
+
 	dirp = opendir(dir_name);
 	if (dirp == NULL)
 	{
@@ -194,18 +210,18 @@ static void do_dir(const char* dir_name, const char* const* parms)
 			continue;
 		}
 
-		if ((strcmp(dirent->d_name, ".." ) == 0) && (parms[offset+1] != NULL))
+		if ((strcmp(dirent->d_name, "..") == 0) && (parms[offset + 1] != NULL))
 		{
 			if (strcmp(dirent->d_name, "..") != 0) //do not print ..
 			{
 				do_comp_print(dirent->d_name);
-			}	
-		else if ((strcmp(dirent->d_name, "..") == 0) && (parms[offset + 1] == NULL))
+			}
+			else if ((strcmp(dirent->d_name, "..") == 0) && (parms[offset + 1] == NULL))
 			{
-			do_usage_print(parms); /////////eigentlich sollte er -print ausspucken (in arbeit)
+				do_usage_print(parms); /////////eigentlich sollte er -print ausspucken (in arbeit)
 			}
 		}
-	
+
 		if (strcmp(dirent->d_name, ".") != 0 && strcmp(dirent->d_name, "..") != 0)
 		{
 			char tempPath[strlen(dir_name) + strlen(dirent->d_name)];
@@ -237,18 +253,18 @@ static void do_dir(const char* dir_name, const char* const* parms)
 * It returns 1 if the comparation is successful and 0 if unsuccessful.
 *
 * \param userid is the user id of the file.
-* \param userparameter is the argument after "-user"
+* \param userparms is the argument after "-user"
 *
 * \return 1 if successful 0 if unsuccessful
 *
 */
-static int do_comp_user(const uid_t userid, const char * userparameter)
+static int do_comp_user(const uid_t userid, const char * userparms)
 {
 	struct passwd *pwd = NULL;
 	char *endptr = NULL;
 	long int uid = 0;
 
-	pwd = getpwnam(userparameter);
+	pwd = getpwnam(userparms);
 	if (pwd == NULL) //A null pointer is returned if the requested entry is not found, or an error occurs.
 	{
 		exit(EXIT_FAILURE);
@@ -262,22 +278,48 @@ static int do_comp_user(const uid_t userid, const char * userparameter)
 	}
 	else
 	{
-		uid = strtol(userparameter, &endptr, 10);
+		uid = strtol(userparms, &endptr, 10);
 		if (strcmp(endptr, "/0") != 0)
 		{
 			exit(EXIT_FAILURE); //strtol couldnt finish converting
 		}
 		if (userid == uid)
 		{
-			return 1;
+			return EXIT_SUCCESS;
 		}
 		else
 		{
-			fprintf(stderr, "-user: %s is not the name of a known user\n", userparameter);
+			fprintf(stderr, "-user: %s is not the name of a known user\n", userparms);
 			exit(EXIT_FAILURE);
 		}
 	}
 	return 0;
+}
+/**
+*
+* do_comp_no_user 
+*
+* 
+* It returns 1 if the comparation is successful and 0 if unsuccessful.
+*
+* 
+*
+*/
+static int do_comp_no_user(const char* file_name, const char* const* parms, const struct stat buf)
+{
+	struct passwd *pwd = NULL;
+
+	pwd = getpwuid(buf.st_uid);
+	
+	if ((pwd == NULL) && (errno == 0)) 
+	{
+		return EXIT_SUCCESS;
+	}	
+	else if (errno != 0) 	
+	{
+		do_error(file_name, parms);
+	}	
+	return EXIT_FAILURE;
 }
 
 /**
@@ -294,7 +336,7 @@ static int do_comp_user(const uid_t userid, const char * userparameter)
 
 static void do_comp_print(const char* file_name)
 {
-	if (printf("%s\n", file_name) < 0) 
+	if (printf("%s\n", file_name) < 0)
 	{
 		printf("do_comp_print error");
 	}
@@ -355,17 +397,17 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 
 	unsigned int blocks = 0;
 	char mode[] = { "?---------" };
-	
+
 	char do_name[strlen(file_name)];
 	int symb_link_length = 0;
 	char symb_link_string[buf.st_size];
-	const char arrow [] = { " -> " };
+	const char arrow[] = { " -> " };
 
 	errno = 0;			//reset errno
 
 	char* do_user = "";
 	char* do_group = "";
-	
+
 	char uid[80] = { 0 };
 	char gid[80] = { 0 };
 
@@ -373,31 +415,31 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 	char do_time[80] = { 0 };
 
 
-	if		(S_ISREG(buf.st_mode))		mode[0] = '-';		//regular file
+	if (S_ISREG(buf.st_mode))		mode[0] = '-';		//regular file
 	else if (S_ISDIR(buf.st_mode))		mode[0] = 'd';		//directory
 	else if (S_ISCHR(buf.st_mode))		mode[0] = 'c';		//char special file
 	else if (S_ISBLK(buf.st_mode))		mode[0] = 'b';		//block special file			
 	else if (S_ISFIFO(buf.st_mode))		mode[0] = 'f';		//FIFO(named pipe)
-	else if (S_ISLNK (buf.st_mode))		mode[0] = 'l';		//symbolic link
-	else if (S_ISSOCK(buf.st_mode ))	mode[0] = 's';		//socket
+	else if (S_ISLNK(buf.st_mode))		mode[0] = 'l';		//symbolic link
+	else if (S_ISSOCK(buf.st_mode))	mode[0] = 's';		//socket
 	else								mode[0] = '?';		//unknown 
-	
 
-	if		(buf.st_mode & S_IRUSR)									mode[1] = 'r'; //user readable	
-	if		(buf.st_mode & S_IWUSR)									mode[2] = 'w'; //user writeable
-	if		((buf.st_mode & S_IXUSR) && !(buf.st_mode & S_ISUID))	mode[3] = 'x'; //user executable without sticky
+
+	if (buf.st_mode & S_IRUSR)									mode[1] = 'r'; //user readable	
+	if (buf.st_mode & S_IWUSR)									mode[2] = 'w'; //user writeable
+	if ((buf.st_mode & S_IXUSR) && !(buf.st_mode & S_ISUID))	mode[3] = 'x'; //user executable without sticky
 	else if (buf.st_mode & S_IXUSR)									mode[3] = 's'; //user executable
 	else if (buf.st_mode & S_ISUID)									mode[3] = 'S'; //user not executable with sticky
 
-	if		(buf.st_mode & S_IRGRP)									mode[4] = 'r'; //group readable	
-	if		(buf.st_mode & S_IWGRP)									mode[5] = 'w'; //group writeable
-	if		((buf.st_mode & S_IXGRP) && !(buf.st_mode & S_ISGID))	mode[6] = 'x'; //group executable without sticky
+	if (buf.st_mode & S_IRGRP)									mode[4] = 'r'; //group readable	
+	if (buf.st_mode & S_IWGRP)									mode[5] = 'w'; //group writeable
+	if ((buf.st_mode & S_IXGRP) && !(buf.st_mode & S_ISGID))	mode[6] = 'x'; //group executable without sticky
 	else if (buf.st_mode & S_IXGRP)									mode[6] = 's'; //group executable
 	else if (buf.st_mode & S_ISGID)									mode[6] = 'S'; //group not executable with sticky
 
-	if		(buf.st_mode & S_IROTH)									mode[7] = 'r'; //others readable	
-	if		(buf.st_mode & S_IWOTH)									mode[8] = 'w'; //others writeable
-	if		((buf.st_mode & S_IXOTH) && !(buf.st_mode & S_ISVTX))	mode[9] = 'x'; //others executable without sticky
+	if (buf.st_mode & S_IROTH)									mode[7] = 'r'; //others readable	
+	if (buf.st_mode & S_IWOTH)									mode[8] = 'w'; //others writeable
+	if ((buf.st_mode & S_IXOTH) && !(buf.st_mode & S_ISVTX))	mode[9] = 'x'; //others executable without sticky
 	else if (buf.st_mode & S_IXOTH)									mode[9] = 't'; //others executable
 	else if (buf.st_mode & S_ISVTX)									mode[9] = 'T'; //others save swapped test after use (sticky)
 
@@ -412,17 +454,17 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 			blocks = ((unsigned int)buf.st_blocks);
 			blocks = blocks / 2 + buf.st_blocks % 2;
 		}
-	}	
-	
+	}
+
 	if (mode[0] == 'l')
-	{		
-		symb_link_length = readlink(file_name, symb_link_string, buf.st_size);		
+	{
+		symb_link_length = readlink(file_name, symb_link_string, buf.st_size);
 		symb_link_string[symb_link_length] = '\0';   //ending for readlink '/0'
-		
+
 		if (symb_link_length)
-		{		
-		strcat(do_name, arrow);
-		strcat(do_name, symb_link_string);			
+		{
+			strcat(do_name, arrow);
+			strcat(do_name, symb_link_string);
 		}
 		else
 		{
@@ -468,7 +510,7 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 	}
 	errno = 0;  //reset errno
 
-	time = localtime(&(buf.st_mtime));			
+	time = localtime(&(buf.st_mtime));
 
 	strftime(month, sizeof(month), "%b", time);  //formatted month 
 
