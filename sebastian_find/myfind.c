@@ -7,14 +7,14 @@
 * @author Maria Kanikova <ic16b002@technikum-wien.at>
 * @author Christian Fuhry <ic16b055@technikum-wien.at>
 * @author Sebastian Boehm <ic16b032@technikum-wien.at>
-* @date 2017/03/12 13:30
+* @date 2017/03/07 23:30
 *
-* @version 1.5
+* @version 0.3
 *
 * @todo God help us all!
 * @Christian > "Error handling in work"
+* @Christian > "-path in work"
 * 
-* @Christian > anpassen der Variablen-Bezeichnungen > Unterrichtsfolien
 */
 
 /*
@@ -54,8 +54,9 @@ static void do_usage_print(const char* const* parms);
 static void do_file(const char* file_name, const char* const* parms);
 static void do_dir(const char* dir_name, const char* const* parms);
 /*static void comp_name(const char* file_name, const char* const* parms, const int* fnm);*/
+static int do_path(const char* file_name, const char* const* parms);
 static int do_check(const char* const* parms);
-static int do_comp_user(const uid_t userid, const char * userparameter);
+static int do_comp_user(const uid_t userid, const char * userparms);
 static int do_comp_no_user(const char* file_name, const char* const* parms, const struct stat buf);
 
 static int do_comp_no_group(const char* file_name, const char* const* parms, const struct stat buf);
@@ -67,7 +68,7 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 * \brief The start of myfind
 *
 * This is the main entry point for this myfind C program.
-* Checks if sufficent ammount of parameters have been entered.
+* Checks if sufficent ammount of parms have been entered.
 *
 * \param argc the number of arguments
 * \param argv the arguments itselves (including the program name in argv[0])
@@ -79,6 +80,15 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 */
 int main(int argc, const char *argv[])
 {
+
+
+	/*int i = argc;
+	for (i; i >= 0; i--)
+	{
+		printf("argc %d argv %s\n", i, argv[i]);
+	}
+	*/
+
 	if (argc < 2)
 	{
 		do_usage_print(argv);
@@ -86,6 +96,7 @@ int main(int argc, const char *argv[])
 	}
 	if (do_check(argv) == 0)
 	{
+		//printf("check OK\n");
 		do_file(argv[1], argv);
 	}
 	else
@@ -95,14 +106,14 @@ int main(int argc, const char *argv[])
 	return EXIT_SUCCESS;
 }
 /**
-* \brief do_file compares parameters with set parameters and prints if corresponding
+* \brief do_file compares parms with set parms and prints if corresponding
 *
-* Compares the arguments/parameters with the parameters defined in the function.
+* Compares the arguments/parms with the parms defined in the function.
 * Prints the file name, directory as set in the parameter functions.
 * If file_name is a directory the function calls do_dir.
 *
 * \param file_name name of directory or file
-* \param parms pointer to start of parameters
+* \param parms pointer to start of parms
 *
 * \return nada
 *
@@ -110,7 +121,7 @@ int main(int argc, const char *argv[])
 static void do_file(const char* file_name, const char* const* parms)
 {
 	struct stat buf; //metadata (atribute)
-	int offset = 1; //helper variable to choose array element
+	int offset = 2; //helper variable to choose array element
 	int print_needed = 0;
 
 	if (lstat(file_name, &buf) == -1)
@@ -125,6 +136,19 @@ static void do_file(const char* file_name, const char* const* parms)
 			if (parms[offset + 1] == NULL) 
 			{
 			print_needed = 1;
+			}
+		}
+		else if (strcmp(parms[offset], "-path") == 0)
+		{
+			offset++; // <action> -path needs another argument 
+			if (parms[offset] != NULL)
+			{
+				print_needed = do_path(file_name, parms);
+			}
+			else
+			{
+				do_error(file_name, parms);
+				exit(EXIT_FAILURE);
 			}
 		}
 		else if (strcmp(parms[offset], "-user") == 0)
@@ -202,7 +226,7 @@ static void do_file(const char* file_name, const char* const* parms)
 * Adds / at the end of directory name if missing to get full path name.
 *
 * \param file_name name of directory
-* \param parms pointer to start of parameters
+* \param parms pointer to start of parms
 *
 * \return nothing babe
 *
@@ -265,6 +289,21 @@ static void do_dir(const char* dir_name, const char* const* parms)
 	}
 
 }
+/**
+*
+* \brief do_path
+*
+
+* \return 1 if successful 0 if unsuccessful
+*
+*/
+static int do_path(const char* file_name, const char* const* parameters)
+{
+	printf("in work");
+	return EXIT_SUCCESS;
+}
+
+
 
 /**
 *
@@ -314,7 +353,7 @@ static int do_comp_user(const uid_t userid, const char * userparms)
 			exit(EXIT_FAILURE);
 		}
 	}
-	return 0;
+	return EXIT_SUCCESS;
 }
 /**
 *
@@ -413,21 +452,21 @@ static void do_comp_print(const char* file_name)
 *
 * \brief usage_print explains usage of myfind
 *
-* This function lists the parameters needed for successful myfind execution.
+* This function lists the parms needed for successful myfind execution.
 *
-* \param parms is list of parameters typed as parameters of function
+* \param parms is list of parms typed as parms of function
 *
 * \ don't work		"-type <xyz>\n"
-"-user <name/uid>\n"
-"-nouser\n"
-"-name <pattern>\n"
-"-path <pattern>\n"
+*					"-name <pattern>\n"
 *
 */
 static void do_usage_print(const char* const* parms) /* how does error handling in printf work?? */
 {
 	fprintf(stderr, "Usage: %s <file or directory> <aktion> \n"
-
+		
+		"-user <name/uid>\n"
+		"-nouser\n"
+		"-path <pattern>\n"
 		"-print\n"
 		"-ls\n",
 		*parms);
@@ -579,12 +618,12 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 }
 /**
 *
-* \brief parameter_check compares entered parameters with set parameters
+* \brief parameter_check compares entered parms with set parms
 *
-* This function compares the arguments entered with the set parameters.
+* This function compares the arguments entered with the set parms.
 * If returned unsuccessful, usage_print shall be called.
 *
-* \param parms is list of parameters typed as parameters of function
+* \param parms is list of parms typed as parms of function
 *
 * \return 0 if successful 1 if unsuccessful
 *
@@ -592,8 +631,9 @@ static int do_ls_print(const char* file_name, const char* const* parms, const st
 static int do_check(const char* const* parms)
 {
 	int offset = 2;
+
 	while (parms[offset] != NULL)
-	{
+	{	
 		if (strcmp(parms[offset], "-user") == 0 ||
 			strcmp(parms[offset], "-name") == 0 ||
 			strcmp(parms[offset], "-type") == 0 ||
@@ -602,6 +642,7 @@ static int do_check(const char* const* parms)
 		{
 			if (parms[offset + 1] == NULL)
 			{
+				printf("missing argument\n");
 				do_usage_print(parms);
 				return EXIT_FAILURE;
 			}
