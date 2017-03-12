@@ -7,14 +7,14 @@
 * @author Maria Kanikova <ic16b002@technikum-wien.at>
 * @author Christian Fuhry <ic16b055@technikum-wien.at>
 * @author Sebastian Boehm <ic16b032@technikum-wien.at>
-* @date 2017/03/07 23:30
+* @date 2017/03/12 16:30
 *
-* @version 0.3
+* @version 0.5
 *
 * @todo God help us all!
 * @Christian > "Error handling in work"
 * @Christian > "-path in work"
-* 
+* @Christian > anpassen der Variablen-Bezeichnungen > Unterrichtsfolien
 */
 
 /*
@@ -121,7 +121,7 @@ int main(int argc, const char *argv[])
 static void do_file(const char* file_name, const char* const* parms)
 {
 	struct stat buf; //metadata (atribute)
-	int offset = 2; //helper variable to choose array element
+	int offset = 1; //helper variable to choose array element
 	int print_needed = 0;
 
 	if (lstat(file_name, &buf) == -1)
@@ -235,7 +235,7 @@ static void do_dir(const char* dir_name, const char* const* parms)
 {
 	DIR *dirp = NULL;
 	const struct dirent *dirent;
-	int offset = 2; //helper variable to choose array element
+	int offset = 1; //helper variable to choose array element
 
 	dirp = opendir(dir_name);
 	if (dirp == NULL)
