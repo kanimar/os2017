@@ -110,7 +110,7 @@ int main(int argc, const char *argv[])
 static void do_file(const char* file_name, const char* const* parms)
 {
 	struct stat buf; //metadata (atribute)
-	int offset = 2; //helper variable to choose array element
+	int offset = 1; //helper variable to choose array element
 	int print_needed = 0;
 
 	if (lstat(file_name, &buf) == -1)
@@ -120,7 +120,14 @@ static void do_file(const char* file_name, const char* const* parms)
 	}
 	while (parms[offset] != NULL)
 	{
-		if (strcmp(parms[offset], "-user") == 0)
+		if ((strcmp(parms[offset], "..") == 0) || (strcmp(parms[offset], ".") == 0))  
+		{
+			if (parms[offset + 1] == NULL) 
+			{
+			print_needed = 1;
+			}
+		}
+		else if (strcmp(parms[offset], "-user") == 0)
 		{
 			offset++; // <action> -user needs another argument user_id or user_name
 			if (parms[offset] != NULL)
@@ -182,6 +189,7 @@ static void do_file(const char* file_name, const char* const* parms)
 	{
 		do_comp_print(file_name);
 	}
+	
 	if (S_ISDIR(buf.st_mode)) //checks if file is a directory
 	{
 		do_dir(file_name, parms);
