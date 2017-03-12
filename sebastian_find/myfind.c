@@ -7,14 +7,13 @@
 * @author Maria Kanikova <ic16b002@technikum-wien.at>
 * @author Christian Fuhry <ic16b055@technikum-wien.at>
 * @author Sebastian Boehm <ic16b032@technikum-wien.at>
-* @date 2017/03/07 16:30
+* @date 2017/03/12 13:30
 *
-* @version 0.4
+* @version 1.5
 *
 * @todo God help us all!
 * @Christian > "Error handling in work"
-* @Christian > "-ls in work"
-* @Christian > "nouser finished" noch nicht komplett getestet
+* 
 * @Christian > anpassen der Variablen-Bezeichnungen > Unterrichtsfolien
 */
 
@@ -58,6 +57,8 @@ static void do_dir(const char* dir_name, const char* const* parms);
 static int do_check(const char* const* parms);
 static int do_comp_user(const uid_t userid, const char * userparameter);
 static int do_comp_no_user(const char* file_name, const char* const* parms, const struct stat buf);
+
+static int do_comp_no_group(const char* file_name, const char* const* parms, const struct stat buf);
 static void do_error(const char* file_name, const char* const* parms);
 static void do_comp_print(const char* file_name);
 static int do_ls_print(const char* file_name, const char* const* parms, const struct stat buf);
@@ -132,7 +133,7 @@ static void do_file(const char* file_name, const char* const* parms)
 				exit(EXIT_FAILURE);
 			}
 		}
-		if (strcmp(parms[offset], "-nouser") == 0)
+		else if (strcmp(parms[offset], "-nouser") == 0)
 		{
 			offset++; // no <action> 
 			if (parms[offset] == NULL)
@@ -145,7 +146,19 @@ static void do_file(const char* file_name, const char* const* parms)
 				exit(EXIT_FAILURE);
 			}
 		}
-	
+		else if (strcmp(parms[offset], "-nogroup") == 0)
+		{
+			offset++; // no <action> 
+			if (parms[offset] == NULL)
+			{
+				print_needed = do_comp_no_group(file_name, parms, buf);
+			}
+			else
+			{
+				do_error(file_name, parms);
+				exit(EXIT_FAILURE);
+			}
+		}
 		/*		 if (strcmp(parms[parm_cnt], '-name') == 0) //original find: find . -name test -> need argument after -name
 		{
 		parm_cnt++;
@@ -307,7 +320,8 @@ static int do_comp_user(const uid_t userid, const char * userparms)
 */
 static int do_comp_no_user(const char* file_name, const char* const* parms, const struct stat buf)
 {
-	struct passwd *pwd = NULL;
+	const struct passwd *pwd = NULL;
+	errno = 0;			//reset errno
 
 	pwd = getpwuid(buf.st_uid);
 	
@@ -319,6 +333,34 @@ static int do_comp_no_user(const char* file_name, const char* const* parms, cons
 	{
 		do_error(file_name, parms);
 	}	
+	return EXIT_FAILURE;
+}
+
+/**
+*
+* do_comp_no_group
+*
+*
+* It returns 1 if the comparation is successful and 0 if unsuccessful.
+*
+*
+*
+*/
+static int do_comp_no_group(const char* file_name, const char* const* parms, const struct stat buf)
+{
+	const struct group *gid = NULL;
+	errno = 0;			//reset errno
+	
+	gid = getgrgid(buf.st_gid);
+
+	if ((gid == NULL) && (errno == 0))
+	{
+		return EXIT_SUCCESS;
+	}
+	else if (errno != 0)
+	{
+		do_error(file_name, parms);
+	}
 	return EXIT_FAILURE;
 }
 
