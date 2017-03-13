@@ -295,14 +295,16 @@ static void do_dir(const char* dir_name, const char* const* parms)
 *
 
 * \return 1 if successful 0 if unsuccessful
-*
+*	match > Returns TRUE if there is a match, FALSE otherwise. 
 */
-static int do_path(const char* file_name, const char* const* parameters)
+static int do_path(const char* file_name, const char* const* parms)
 {
-	printf("in work");
-	return EXIT_SUCCESS;
-}
 
+	int match = fnmatch(*(parms + 1), file_name, FNM_NOESCAPE);  //FNM_NOESCAPE Disable backslash escaping. 
+
+	
+	return match;
+}
 
 
 /**
