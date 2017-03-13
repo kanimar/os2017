@@ -53,7 +53,7 @@
 static void do_usage_print(const char* const* parms);
 static void do_file(const char* file_name, const char* const* parms);
 static void do_dir(const char* dir_name, const char* const* parms);
-/*static void comp_name(const char* file_name, const char* const* parms, const int* fnm);*/
+static int do_comp_name(const char* file_name, const char* parms);
 static int do_type(const char* parms, const struct stat buf);
 static int do_path(const char* file_name, const char *parms);
 static int do_check(const char* const* parms);
@@ -196,14 +196,14 @@ static void do_file(const char* file_name, const char* const* parms)
 				exit(EXIT_FAILURE);
 			}
 		}
-		/*		 if (strcmp(parms[parm_cnt], '-name') == 0) //original find: find . -name test -> need argument after -name
+		else if (strcmp(parms[offset], "-name") == 0) //original find: find . -name test -> need argument after -name
 		{
-		parm_cnt++;
-		if (parms[parm_cnt] != NULL)
-		{
-		comp_name(file_name, parms[parm_cnt], FNM_NOESCAPE);
-		}
-		} */
+			offset++;
+			if (parms[offset] != NULL)
+			{
+			print_needed = do_comp_name(file_name, parms[offset]);
+			}
+		} 
 		else if (strcmp(parms[offset], "-print") == 0)
 		{
 			do_comp_print(file_name);
@@ -470,9 +470,24 @@ static void do_comp_print(const char* file_name)
 * \return njet
 *
 */
-/*static void comp_name(const char* file_name, const char* const* parms, const int* fnm)
+static int do_comp_name(const char* file_name, const char* parms)
 {
-}*/
+	char temp_name[strlen(file_name) + 1]; // basename() may modify the contents of path, so it may be desirable to pass a copy when calling one of these functions.
+	strcpy(temp_name, file_name);
+	char* base = NULL;
+	base = basename(temp_name);
+
+	const int match_name = fnmatch(base, parms, FNM_NOESCAPE);
+
+	if (match_name == 0)
+	{
+		return 1;
+	}
+	else if (match_name != FNM_NOMATCH) //FNM_NOMATCH if there is no match or another nonzero value if there is an error
+		exit(EXIT_FAILURE);
+		
+	return 0;
+}
 
 /**
 *
