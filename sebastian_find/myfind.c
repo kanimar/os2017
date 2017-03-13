@@ -7,9 +7,9 @@
 * @author Maria Kanikova <ic16b002@technikum-wien.at>
 * @author Christian Fuhry <ic16b055@technikum-wien.at>
 * @author Sebastian Boehm <ic16b032@technikum-wien.at>
-* @date 2017/03/12 16:30
+* @date 2017/03/13
 *
-* @version 0.5
+* @version 0.6
 *
 * @todo God help us all!
 * @Christian > "Error handling in work"
@@ -54,7 +54,7 @@ static void do_usage_print(const char* const* parms);
 static void do_file(const char* file_name, const char* const* parms);
 static void do_dir(const char* dir_name, const char* const* parms);
 /*static void comp_name(const char* file_name, const char* const* parms, const int* fnm);*/
-static int do_path(const char* file_name, const char* const* parms);
+static int do_path(const char* file_name, const char *parms);
 static int do_check(const char* const* parms);
 static int do_comp_user(const uid_t userid, const char * userparms);
 static int do_comp_no_user(const char* file_name, const char* const* parms, const struct stat buf);
@@ -142,8 +142,9 @@ static void do_file(const char* file_name, const char* const* parms)
 		{
 			offset++; // <action> -path needs another argument 
 			if (parms[offset] != NULL)
-			{
-				print_needed = do_path(file_name, parms);
+			{			
+				print_needed = do_path(file_name, parms[offset]);
+				
 			}
 			else
 			{
@@ -260,11 +261,7 @@ static void do_dir(const char* dir_name, const char* const* parms)
 			if (strcmp(dirent->d_name, "..") != 0) //do not print ..
 			{
 				do_comp_print(dirent->d_name);
-			}
-			else if ((strcmp(dirent->d_name, "..") == 0) && (parms[offset + 1] == NULL))
-			{
-				do_usage_print(parms); /////////eigentlich sollte er -print ausspucken (in arbeit)
-			}
+			}			
 		}
 
 		if (strcmp(dirent->d_name, ".") != 0 && strcmp(dirent->d_name, "..") != 0)
@@ -292,19 +289,25 @@ static void do_dir(const char* dir_name, const char* const* parms)
 /**
 *
 * \brief do_path
-*
-
-* \return 1 if successful 0 if unsuccessful
+* int fnmatch(const char *pattern, const char *string, int flags);
+*Flag FNM_NOESCAPE > treat backslash as an ordinary character 
+* 
 *	match > Returns TRUE if there is a match, FALSE otherwise. 
 */
-static int do_path(const char* file_name, const char* const* parms)
+static int do_path(const char* file_name, const char *parms)
 {
 
-	int match = fnmatch(*(parms + 1), file_name, FNM_NOESCAPE);  //FNM_NOESCAPE Disable backslash escaping. 
+//	printf("file name %c\n", *file_name);
+//	printf("parms %c\n\n\n", *parms);
 
+	int match = strcmp(parms, file_name);
 	
-	return match;
+	if (match != 0) return 0;
+	//printf("match %d\n",match);
+	
+	return 1;
 }
+
 
 
 /**
@@ -347,7 +350,7 @@ static int do_comp_user(const uid_t userid, const char * userparms)
 		}
 		if (userid == uid)
 		{
-			return EXIT_SUCCESS;
+			return 1;
 		}
 		else
 		{
@@ -355,7 +358,7 @@ static int do_comp_user(const uid_t userid, const char * userparms)
 			exit(EXIT_FAILURE);
 		}
 	}
-	return EXIT_SUCCESS;
+	return 0;
 }
 /**
 *
