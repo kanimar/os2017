@@ -9,11 +9,11 @@
 * @author Sebastian Boehm <ic16b032@technikum-wien.at>
 * @date 2017/03/13
 *
-* @version 0.9
+* @version 0.6
 *
 * @todo God help us all!
 * @Christian > "Error handling in work"
-* @Christian > "-type finish !YES!"
+* @Christian > "-path in work"
 * @Christian > anpassen der Variablen-Bezeichnungen > Unterrichtsfolien
 */
 
@@ -93,16 +93,15 @@ int main(int argc, const char *argv[])
 	{
 		do_usage_print(argv);
 		return EXIT_FAILURE;
-	}
-	if (do_check(argv) == 0)
-	{
+	}								do_file(argv[1], argv);
+	//if (do_check(argv) == 0)
+//	{
 		//printf("check OK\n");
-		do_file(argv[1], argv);
-	}
-	else
-	{
-		exit(EXIT_FAILURE);
-	}
+		
+//	}
+////	{
+//		exit(EXIT_FAILURE);
+//	}
 	return EXIT_SUCCESS;
 }
 /**
@@ -131,14 +130,7 @@ static void do_file(const char* file_name, const char* const* parms)
 	}
 	while (parms[offset] != NULL)
 	{
-		if ((strcmp(parms[offset], "..") == 0) || (strcmp(parms[offset], ".") == 0))
-		{
-			if (parms[offset+1] == NULL)
-			{
-				print_needed = 1;
-			}
-		}
-		else if (strcmp(parms[offset], "-type") == 0)
+		if (strcmp(parms[offset], "-type") == 0)
 		{		
 			if (parms[offset+1] != NULL)
 			{
@@ -221,6 +213,10 @@ static void do_file(const char* file_name, const char* const* parms)
 		{
 			do_ls_print(file_name, parms, buf);
 		}
+		else if (((parms[1]) != NULL) && ((parms[2]) == NULL) && (print_needed == 0))
+		{
+			print_needed = 1;
+		}
 		offset++;
 	}
 	if (print_needed > 0)
@@ -268,14 +264,6 @@ static void do_dir(const char* dir_name, const char* const* parms)
 			errno = 0;			//reset errno
 			continue;
 		}
-
-	//	if ((strcmp(dirent->d_name, "..") == 0) && (parms[offset + 1] != NULL))
-	//	{
-	//		if (strcmp(dirent->d_name, "..") != 0) //do not print ..
-	//		{
-	//			do_comp_print(dirent->d_name);
-	//		}
-//		}
 
 		if (strcmp(dirent->d_name, ".") != 0 && strcmp(dirent->d_name, "..") != 0)
 		{
@@ -494,17 +482,17 @@ static void do_comp_print(const char* file_name)
 *
 * \param parms is list of parms typed as parms of function
 *
-* \ don't work		"-type <xyz>\n"
+* \ don't work		
 *					"-name <pattern>\n"
 *
 */
 static void do_usage_print(const char* const* parms) /* how does error handling in printf work?? */
 {
 	fprintf(stderr, "Usage: %s <file or directory> <aktion> \n"
-
-		"-user <name/uid>\n"
-		"-nouser\n"
+		"-type <bcdpfls>\n"
 		"-path <pattern>\n"
+		"-user <name/uid>\n"
+		"-nouser\n"		
 		"-print\n"
 		"-ls\n",
 		*parms);
