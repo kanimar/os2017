@@ -9,11 +9,11 @@
 * @author Sebastian Boehm <ic16b032@technikum-wien.at>
 * @date 2017/03/13
 *
-* @version 0.6
+* @version 0.9
 *
 * @todo God help us all!
 * @Christian > "Error handling in work"
-* @Christian > "-path in work"
+* @Christian > "-type finish !YES!"
 * @Christian > anpassen der Variablen-Bezeichnungen > Unterrichtsfolien
 */
 
@@ -54,6 +54,7 @@ static void do_usage_print(const char* const* parms);
 static void do_file(const char* file_name, const char* const* parms);
 static void do_dir(const char* dir_name, const char* const* parms);
 /*static void comp_name(const char* file_name, const char* const* parms, const int* fnm);*/
+static int do_type(const char* parms, const struct stat buf);
 static int do_path(const char* file_name, const char *parms);
 static int do_check(const char* const* parms);
 static int do_comp_user(const uid_t userid, const char * userparms);
@@ -82,12 +83,11 @@ int main(int argc, const char *argv[])
 {
 
 
-	/*int i = argc;
-	for (i; i >= 0; i--)
-	{
-		printf("argc %d argv %s\n", i, argv[i]);
-	}
-	*/
+//	int i = argc;
+//	for (i; i >= 0; i--)
+//	{
+////	}
+	
 
 	if (argc < 2)
 	{
@@ -131,20 +131,33 @@ static void do_file(const char* file_name, const char* const* parms)
 	}
 	while (parms[offset] != NULL)
 	{
-		if ((strcmp(parms[offset], "..") == 0) || (strcmp(parms[offset], ".") == 0))  
+		if ((strcmp(parms[offset], "..") == 0) || (strcmp(parms[offset], ".") == 0))
 		{
-			if (parms[offset + 1] == NULL) 
+			if (parms[offset+1] == NULL)
 			{
-			print_needed = 1;
+				print_needed = 1;
 			}
+		}
+		else if (strcmp(parms[offset], "-type") == 0)
+		{		
+			if (parms[offset+1] != NULL)
+			{
+				print_needed = do_type(parms[offset+1], buf);
+			}
+			else
+			{
+				do_error(file_name, parms);
+				exit(EXIT_FAILURE);
+			}
+
 		}
 		else if (strcmp(parms[offset], "-path") == 0)
 		{
-			offset++; // <action> -path needs another argument 
-			if (parms[offset] != NULL)
-			{			
-				print_needed = do_path(file_name, parms[offset]);
-				
+			
+			if (parms[offset+1] != NULL)
+			{
+				print_needed = do_path(file_name, parms[offset+1]);
+
 			}
 			else
 			{
@@ -154,10 +167,10 @@ static void do_file(const char* file_name, const char* const* parms)
 		}
 		else if (strcmp(parms[offset], "-user") == 0)
 		{
-			offset++; // <action> -user needs another argument user_id or user_name
-			if (parms[offset] != NULL)
+			
+			if (parms[offset+1] != NULL)
 			{
-				print_needed = do_comp_user(buf.st_uid, parms[offset]);
+				print_needed = do_comp_user(buf.st_uid, parms[offset+1]);
 			}
 			else
 			{
@@ -167,8 +180,8 @@ static void do_file(const char* file_name, const char* const* parms)
 		}
 		else if (strcmp(parms[offset], "-nouser") == 0)
 		{
-			offset++; // no <action> 
-			if (parms[offset] == NULL)
+			
+			if (parms[offset+1] == NULL)
 			{
 				print_needed = do_comp_no_user(file_name, parms, buf);
 			}
@@ -180,8 +193,8 @@ static void do_file(const char* file_name, const char* const* parms)
 		}
 		else if (strcmp(parms[offset], "-nogroup") == 0)
 		{
-			offset++; // no <action> 
-			if (parms[offset] == NULL)
+			
+			if (parms[offset+1] == NULL)
 			{
 				print_needed = do_comp_no_group(file_name, parms, buf);
 			}
@@ -214,7 +227,7 @@ static void do_file(const char* file_name, const char* const* parms)
 	{
 		do_comp_print(file_name);
 	}
-	
+
 	if (S_ISDIR(buf.st_mode)) //checks if file is a directory
 	{
 		do_dir(file_name, parms);
@@ -256,13 +269,13 @@ static void do_dir(const char* dir_name, const char* const* parms)
 			continue;
 		}
 
-		if ((strcmp(dirent->d_name, "..") == 0) && (parms[offset + 1] != NULL))
-		{
-			if (strcmp(dirent->d_name, "..") != 0) //do not print ..
-			{
-				do_comp_print(dirent->d_name);
-			}			
-		}
+	//	if ((strcmp(dirent->d_name, "..") == 0) && (parms[offset + 1] != NULL))
+	//	{
+	//		if (strcmp(dirent->d_name, "..") != 0) //do not print ..
+	//		{
+	//			do_comp_print(dirent->d_name);
+	//		}
+//		}
 
 		if (strcmp(dirent->d_name, ".") != 0 && strcmp(dirent->d_name, "..") != 0)
 		{
@@ -286,25 +299,45 @@ static void do_dir(const char* dir_name, const char* const* parms)
 	}
 
 }
+
+/**
+*
+* \brief do_type
+*/
+static int do_type(const char* parms, const struct stat buf) 
+{	
+	int match = -1;	
+	
+	if		(strcmp(parms, "b") == 0) match = S_ISBLK (buf.st_mode);
+	else if (strcmp(parms, "c") == 0) match = S_ISCHR (buf.st_mode);
+	else if (strcmp(parms, "d") == 0) match = S_ISDIR (buf.st_mode);
+	else if (strcmp(parms, "p") == 0) match = S_ISFIFO(buf.st_mode);
+	else if (strcmp(parms, "f") == 0) match = S_ISREG (buf.st_mode);
+	else if (strcmp(parms, "l") == 0) match = S_ISLNK (buf.st_mode);
+	else if (strcmp(parms, "s") == 0) match = S_ISSOCK(buf.st_mode);
+	
+	return match;
+}
+
 /**
 *
 * \brief do_path
 * int fnmatch(const char *pattern, const char *string, int flags);
-*Flag FNM_NOESCAPE > treat backslash as an ordinary character 
-* 
-*	match > Returns TRUE if there is a match, FALSE otherwise. 
+*Flag FNM_NOESCAPE > treat backslash as an ordinary character
+*
+*	match > Returns TRUE if there is a match, FALSE otherwise.
 */
 static int do_path(const char* file_name, const char *parms)
 {
 
-//	printf("file name %c\n", *file_name);
-//	printf("parms %c\n\n\n", *parms);
+	//	printf("file name %c\n", *file_name);
+	//	printf("parms %c\n\n\n", *parms);
 
 	int match = strcmp(parms, file_name);
-	
+
 	if (match != 0) return 0;
 	//printf("match %d\n",match);
-	
+
 	return 1;
 }
 
@@ -362,12 +395,12 @@ static int do_comp_user(const uid_t userid, const char * userparms)
 }
 /**
 *
-* do_comp_no_user 
+* do_comp_no_user
 *
-* 
+*
 * It returns 1 if the comparation is successful and 0 if unsuccessful.
 *
-* 
+*
 *
 */
 static int do_comp_no_user(const char* file_name, const char* const* parms, const struct stat buf)
@@ -376,15 +409,15 @@ static int do_comp_no_user(const char* file_name, const char* const* parms, cons
 	errno = 0;			//reset errno
 
 	pwd = getpwuid(buf.st_uid);
-	
-	if ((pwd == NULL) && (errno == 0)) 
+
+	if ((pwd == NULL) && (errno == 0))
 	{
 		return EXIT_SUCCESS;
-	}	
-	else if (errno != 0) 	
+	}
+	else if (errno != 0)
 	{
 		do_error(file_name, parms);
-	}	
+	}
 	return EXIT_FAILURE;
 }
 
@@ -402,7 +435,7 @@ static int do_comp_no_group(const char* file_name, const char* const* parms, con
 {
 	const struct group *gid = NULL;
 	errno = 0;			//reset errno
-	
+
 	gid = getgrgid(buf.st_gid);
 
 	if ((gid == NULL) && (errno == 0))
@@ -468,7 +501,7 @@ static void do_comp_print(const char* file_name)
 static void do_usage_print(const char* const* parms) /* how does error handling in printf work?? */
 {
 	fprintf(stderr, "Usage: %s <file or directory> <aktion> \n"
-		
+
 		"-user <name/uid>\n"
 		"-nouser\n"
 		"-path <pattern>\n"
@@ -638,7 +671,7 @@ static int do_check(const char* const* parms)
 	int offset = 2;
 
 	while (parms[offset] != NULL)
-	{	
+	{
 		if (strcmp(parms[offset], "-user") == 0 ||
 			strcmp(parms[offset], "-name") == 0 ||
 			strcmp(parms[offset], "-type") == 0 ||
