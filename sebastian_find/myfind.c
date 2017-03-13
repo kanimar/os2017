@@ -34,6 +34,7 @@
 #include <grp.h>
 #include <time.h>
 #include <fnmatch.h>
+#include <libgen.h>
 
 /*
 * --------------------------------------------------------------- defines --
@@ -59,7 +60,7 @@ static int do_path(const char* file_name, const char *parms);
 static int do_check(const char* const* parms);
 static int do_comp_user(const uid_t userid, const char * userparms);
 static int do_comp_no_user(const char* file_name, const char* const* parms, const struct stat buf);
-
+static int do_comp_group(const gid_t grpid, const char * userparms);
 static int do_comp_no_group(const char* file_name, const char* const* parms, const struct stat buf);
 static void do_error(const char* file_name, const char* const* parms);
 static void do_comp_print(const char* file_name);
@@ -163,6 +164,19 @@ static void do_file(const char* file_name, const char* const* parms)
 			if (parms[offset+1] != NULL)
 			{
 				print_needed = do_comp_user(buf.st_uid, parms[offset+1]);
+			}
+			else
+			{
+				do_error(file_name, parms);
+				exit(EXIT_FAILURE);
+			}
+		}
+		else if (strcmp(parms[offset], "-group") == 0)
+		{
+			
+			if (parms[offset+1] != NULL)
+			{
+				print_needed = do_comp_group(buf.st_gid, parms[offset+1]);
 			}
 			else
 			{
@@ -408,7 +422,56 @@ static int do_comp_no_user(const char* file_name, const char* const* parms, cons
 	}
 	return EXIT_FAILURE;
 }
+/**
+*
+* \brief do_comp_group compares parameter with gid and gname
+*
+* This function compares the argument after "-group" with the gid and groupname of the file.
+* It returns 1 if the comparation is successful and 0 if unsuccessful.
+*
+* \param userid is the group id of the file.
+* \param userparms is the argument after "-group"
+*
+* \return 1 if successful 0 if unsuccessful
+*
+*/
+static int do_comp_group(const gid_t grpid, const char * userparms)
+{
+	struct passwd *pwd = NULL;
+	char *endptr = NULL;
+	long int gid = 0;
 
+	pwd = getpwnam(userparms);
+	if (pwd == NULL) //A null pointer is returned if the requested entry is not found, or an error occurs.
+	{
+		exit(EXIT_FAILURE);
+	}
+	else if (pwd != NULL)
+	{
+		if (pwd->pw_gid == grpid)
+		{
+			return 1;
+		}
+	}
+	else
+	{
+		gid = strtol(userparms, &endptr, 10);
+		if (strcmp(endptr, "/0") != 0)
+		{
+			exit(EXIT_FAILURE); //strtol couldnt finish converting
+		}
+		if (grpid == gid)
+		{
+			return 1;
+		}
+		else
+		{
+			fprintf(stderr, "-group: %s is not the name of a known group\n", userparms);
+			exit(EXIT_FAILURE);
+		}
+	}
+	return 0;
+}
 /**
 *
 * do_comp_no_group
