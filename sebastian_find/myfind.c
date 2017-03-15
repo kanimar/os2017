@@ -58,12 +58,13 @@ static int do_comp_name(const char* file_name, const char* parms);
 static int do_type(const char* parms, const struct stat buf);
 static int do_path(const char* file_name, const char *parms);
 static int do_check(const char* const* parms);
+static int do_comp_user(const uid_t userid, const char * userparms);
+static int do_comp_no_user(const char* file_name, const char* const* parms, const struct stat buf);
+static int do_comp_group(const gid_t grpid, const char * userparms);
+static int do_comp_no_group(const char* file_name, const char* const* parms, const struct stat buf);
 static void do_error(const char* file_name, const char* const* parms);
 static void do_comp_print(const char* file_name);
 static int do_ls_print(const char* file_name, const char* const* parms, const struct stat buf);
-static int do_comp_userOrGroup(const char * userparms, const struct stat buf, char *userOrGroup);
-static int do_comp_no_userOrGroup(const char* file_name, const char* const* parms, const struct stat buf, char *userOrGroup);
-
 /**
 *
 * \brief The start of myfind
@@ -119,10 +120,9 @@ int main(int argc, const char *argv[])
 */
 static void do_file(const char* file_name, const char* const* parms)
 {
-	struct stat buf; //metadata (attribute)
-	int offset = 2; //helper variable to choose array element
+	struct stat buf; //metadata (atribute)
+	int offset = 1; //helper variable to choose array element
 	int print_needed = 0;
-	int printed = 0;
 
 	if (lstat(file_name, &buf) == -1)
 	{
@@ -163,7 +163,7 @@ static void do_file(const char* file_name, const char* const* parms)
 			
 			if (parms[offset+1] != NULL)
 			{
-				print_needed = do_comp_userOrGroup(parms[offset+1], buf, "user");
+				print_needed = do_comp_user(buf.st_uid, parms[offset+1]);
 			}
 			else
 			{
@@ -176,7 +176,7 @@ static void do_file(const char* file_name, const char* const* parms)
 			
 			if (parms[offset+1] != NULL)
 			{
-				print_needed = do_comp_userOrGroup(parms[offset+1], buf, "group");
+				print_needed = do_comp_group(buf.st_gid, parms[offset+1]);
 			}
 			else
 			{
@@ -189,7 +189,7 @@ static void do_file(const char* file_name, const char* const* parms)
 			
 			if (parms[offset+1] == NULL)
 			{
-				print_needed = do_comp_no_userOrGroup(file_name, parms, buf, "user");
+				print_needed = do_comp_no_user(file_name, parms, buf);
 			}
 			else
 			{
@@ -202,7 +202,7 @@ static void do_file(const char* file_name, const char* const* parms)
 			
 			if (parms[offset+1] == NULL)
 			{
-				print_needed = do_comp_no_userOrGroup(file_name, parms, buf, "group");
+				print_needed = do_comp_no_group(file_name, parms, buf);
 			}
 			else
 			{
@@ -210,7 +210,7 @@ static void do_file(const char* file_name, const char* const* parms)
 				exit(EXIT_FAILURE);
 			}
 		}
-		else if (strcmp(parms[offset], "-name") == 0) 
+		else if (strcmp(parms[offset], "-name") == 0) //original find: find . -name test -> need argument after -name
 		{
 			offset++;
 			if (parms[offset] != NULL)
@@ -221,7 +221,7 @@ static void do_file(const char* file_name, const char* const* parms)
 		else if (strcmp(parms[offset], "-print") == 0)
 		{
 			do_comp_print(file_name);
-			printed = 1;
+
 		}
 		else if (strcmp(parms[offset], "-ls") == 0)
 		{
@@ -229,11 +229,11 @@ static void do_file(const char* file_name, const char* const* parms)
 		}
 		else if (((parms[1]) != NULL) && ((parms[2]) == NULL) && (print_needed == 0))
 		{
-			printed = 1;
+			print_needed = 1;
 		}
 		offset++;
 	}
-	if (print_needed > 0 && printed == 0)
+	if (print_needed > 0)
 	{
 		do_comp_print(file_name);
 	}
@@ -343,118 +343,161 @@ static int do_path(const char* file_name, const char *parms)
 	return 1;
 }
 
+
+
 /**
 *
-* \brief do_comp_userOrGroup compares parameter with uid/gid and uname/grpname
+* \brief do_comp_user compares parameter with uid and uname
 *
-* This function compares the argument after "-user" od "-group" with the uid/gid of the file.
+* This function compares the argument after "-user" with the uid and username of the file.
 * It returns 1 if the comparation is successful and 0 if unsuccessful.
 *
-* \param userparms is the argument typed by the user after -user or -group.
-* \param stat buf is the buffer with the metadata created by lstat.
-* \param userOrGroup hardcoded to distinguish betweed -user and -group search action.
+* \param userid is the user id of the file.
+* \param userparms is the argument after "-user"
 *
 * \return 1 if successful 0 if unsuccessful
 *
 */
-static int do_comp_userOrGroup(const char * userparms, const struct stat buf, char *userOrGroup)
+static int do_comp_user(const uid_t userid, const char * userparms)
 {
 	struct passwd *pwd = NULL;
 	char *endptr = NULL;
-	long int id = 0;
+	long int uid = 0;
+
 	pwd = getpwnam(userparms);
 	if (pwd == NULL) //A null pointer is returned if the requested entry is not found, or an error occurs.
 	{
-		fprintf(stderr, "-%s: %s is not the name of a known %s\n", userOrGroup, userparms, userOrGroup);
 		exit(EXIT_FAILURE);
 	}
 	else if (pwd != NULL)
 	{
-		if (strcmp(userOrGroup, "user") == 0)
-		{	if (pwd->pw_uid == buf.st_uid)
-			{
-				return 1;
-			}
-			id = strtol(userparms, &endptr, 10);
-			if (strcmp(endptr, "/0") != 0)
-			{
-				exit(EXIT_FAILURE); //strtol couldnt finish converting
-			}
-			if (buf.st_uid == id)
-			{
-				return 1;
-			}
-		}
-		else if (strcmp(userOrGroup, "group") == 0)
+		if (pwd->pw_uid == userid)
 		{
-			if (pwd->pw_gid == id)
-			{
-				return 1;
-			}
-			id = strtol(userparms, &endptr, 10);
-			if (strcmp(endptr, "/0") != 0)
-			{
-				exit(EXIT_FAILURE); //strtol couldnt finish converting
-			}
-			if (buf.st_gid == id)
-			{
-				return 1;
-			}
+			return 1;
 		}
 	}
 	else
+	{
+		uid = strtol(userparms, &endptr, 10);
+		if (strcmp(endptr, "/0") != 0)
 		{
-			fprintf(stderr, "-%s: %s is not the name of a known %s\n", userOrGroup, userparms, userOrGroup);
+			exit(EXIT_FAILURE); //strtol couldnt finish converting
+		}
+		if (userid == uid)
+		{
+			return 1;
+		}
+		else
+		{
+			fprintf(stderr, "-user: %s is not the name of a known user\n", userparms);
 			exit(EXIT_FAILURE);
 		}
+	}
 	return 0;
 }
-
 /**
 *
-* \brief do_comp_no_userOrGroup checks if a file is user- or groupless
+* do_comp_no_user
 *
-* This function checks if a file or directory currently has a user or group assigned.
-* It returns 1 if the user or group parameter is not set in file.
 *
-* \param file_name is the name of the file to be checked.
-* \param parameter needed for error handling.
-* \param stat buf is the buffer with the metadata created by lstat.
-* \param userOrGroup hardcoded to distinguish betweed -nouser and -nogroup  action.
+* It returns 1 if the comparation is successful and 0 if unsuccessful.
 *
-* \return 1 if user or groupless 0 if user or group present
+*
 *
 */
-static int do_comp_no_userOrGroup(const char* file_name, const char* const* parms, const struct stat buf, char *userOrGroup)
+static int do_comp_no_user(const char* file_name, const char* const* parms, const struct stat buf)
 {
 	const struct passwd *pwd = NULL;
-	const struct group *gid = NULL;
 	errno = 0;			//reset errno
-	if (strcmp(userOrGroup, "user") == 0)
+
+	pwd = getpwuid(buf.st_uid);
+
+	if ((pwd == NULL) && (errno == 0))
 	{
-		pwd = getpwuid(buf.st_uid);
-		if ((pwd == NULL) && (errno == 0))
+		return EXIT_SUCCESS;
+	}
+	else if (errno != 0)
+	{
+		do_error(file_name, parms);
+	}
+	return EXIT_FAILURE;
+}
+/**
+*
+* \brief do_comp_group compares parameter with gid and gname
+*
+* This function compares the argument after "-group" with the gid and groupname of the file.
+* It returns 1 if the comparation is successful and 0 if unsuccessful.
+*
+* \param userid is the group id of the file.
+* \param userparms is the argument after "-group"
+*
+* \return 1 if successful 0 if unsuccessful
+*
+*/
+static int do_comp_group(const gid_t grpid, const char * userparms)
+{
+	struct passwd *pwd = NULL;
+	char *endptr = NULL;
+	long int gid = 0;
+
+	pwd = getpwnam(userparms);
+	if (pwd == NULL) //A null pointer is returned if the requested entry is not found, or an error occurs.
+	{
+		exit(EXIT_FAILURE);
+	}
+	else if (pwd != NULL)
+	{
+		if (pwd->pw_gid == grpid)
 		{
 			return 1;
-		}
-		else if (errno != 0)
-		{
-			do_error(file_name, parms);
 		}
 	}
-	else if (strcmp(userOrGroup, "group") == 0)
+	else
 	{
-		gid = getgrgid(buf.st_gid);
-		if ((gid == NULL) && (errno == 0))
+		gid = strtol(userparms, &endptr, 10);
+		if (strcmp(endptr, "/0") != 0)
+		{
+			exit(EXIT_FAILURE); //strtol couldnt finish converting
+		}
+		if (grpid == gid)
 		{
 			return 1;
 		}
-		else if (errno != 0)
+		else
 		{
-			do_error(file_name, parms);
+			fprintf(stderr, "-group: %s is not the name of a known group\n", userparms);
+			exit(EXIT_FAILURE);
 		}
 	}
 	return 0;
+}
+/**
+*
+* do_comp_no_group
+*
+*
+* It returns 1 if the comparation is successful and 0 if unsuccessful.
+*
+*
+*
+*/
+static int do_comp_no_group(const char* file_name, const char* const* parms, const struct stat buf)
+{
+	const struct group *gid = NULL;
+	errno = 0;			//reset errno
+
+	gid = getgrgid(buf.st_gid);
+
+	if ((gid == NULL) && (errno == 0))
+	{
+		return EXIT_SUCCESS;
+	}
+	else if (errno != 0)
+	{
+		do_error(file_name, parms);
+	}
+	return EXIT_FAILURE;
 }
 
 /**
