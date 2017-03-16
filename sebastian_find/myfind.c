@@ -88,17 +88,16 @@ int main(int argc, const char *argv[])
 	
 
 
-	if (argc < 2)
-	{
+		if ( (argc < 2) && (do_check(argv) != 0) )
+	{							
 		do_usage_print(argv);
 		return EXIT_FAILURE;
-	}								
-	if (do_check(argv) == 0)
-		{								printf("check OK\n");
+	}
+	else
+	{	
+//		printf("check OK\n");
 		do_file(argv[1], argv);
-		}
-	
-	return EXIT_SUCCESS;
+	}
 }
 /**
 * \brief do_file compares parms with set parms and prints if corresponding
