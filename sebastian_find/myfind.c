@@ -369,7 +369,7 @@ static int do_comp_userOrGroup(const char * userparms, const struct stat buf, ch
 {
 	struct passwd *pwd = NULL;
 	char *endptr = NULL;
-	long int id = 0;
+	unsigned int id = 0;
 	pwd = getpwnam(userparms);
 
 	if (pwd == NULL) //A null pointer is returned if the requested entry is not found, or an error occurs.
